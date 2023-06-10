@@ -22,8 +22,8 @@ type Err string
 //	var ErrProcessThing errific.Err = "error processing a thing"
 //
 //	return ErrProcessThing.New(err)
-func (e Err) New(errs ...error) error {
-	return &errible{
+func (e Err) New(errs ...error) errific {
+	return errific{
 		err:    e,
 		errs:   errs,
 		caller: caller(),
@@ -36,8 +36,8 @@ func (e Err) New(errs ...error) error {
 //	var ErrProcessThing errific.Err = "error processing thing id: '%s'"
 //
 //	return ErrProcessThing.Errorf("abc")
-func (e Err) Errorf(a ...any) error {
-	return &errible{
+func (e Err) Errorf(a ...any) errific {
+	return errific{
 		err:    fmt.Errorf(e.Error(), a...),
 		caller: caller(),
 		unwrap: []error{e},
@@ -49,9 +49,9 @@ func (e Err) Errorf(a ...any) error {
 //	var ErrProcessThing errific.Err = "error processing thing"
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
-func (e Err) Withf(format string, a ...any) (err error) {
-	format = fmt.Sprintf("%s: %s", e.Error(), format)
-	return &errible{
+func (e Err) Withf(format string, a ...any) errific {
+	format = e.Error() + ": " + format
+	return errific{
 		err:    fmt.Errorf(format, a...),
 		caller: caller(),
 		unwrap: []error{e},
@@ -64,8 +64,8 @@ func (e Err) Withf(format string, a ...any) (err error) {
 //	var ErrProcessThing errific.Err = "error processing thing"
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
-func (e Err) Wrapf(format string, a ...any) error {
-	return &errible{
+func (e Err) Wrapf(format string, a ...any) errific {
+	return errific{
 		err:    e,
 		errs:   []error{fmt.Errorf(format, a...)},
 		caller: caller(),
@@ -76,14 +76,14 @@ func (e Err) Error() string {
 	return string(e)
 }
 
-type errible struct {
+type errific struct {
 	err    error   // primary error.
 	errs   []error // errors used in string output, and satisfy errors.Is.
 	unwrap []error // errors not used in string output, but satisfy errors.Is.
 	caller string  // caller information.
 }
 
-func (e errible) Error() (msg string) {
+func (e errific) Error() (msg string) {
 	switch c.caller {
 	case Disabled:
 
@@ -109,7 +109,24 @@ func (e errible) Error() (msg string) {
 	return msg
 }
 
-func (e errible) Unwrap() []error {
+func (e errific) Join(errs ...error) error {
+	e.errs = append(e.errs, errs...)
+	return e
+}
+
+func (e errific) Withf(format string, a ...any) errific {
+	format = e.err.Error() + ": " + format
+	e.err = fmt.Errorf(format, a...)
+	e.unwrap = append(e.unwrap, e)
+	return e
+}
+
+func (e errific) Wrapf(format string, a ...any) errific {
+	e.errs = append(e.errs, fmt.Errorf(format, a...))
+	return e
+}
+
+func (e errific) Unwrap() []error {
 	var errs []error
 	if e.err != nil {
 		errs = append(errs, e.err)

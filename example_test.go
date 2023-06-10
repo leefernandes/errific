@@ -101,7 +101,7 @@ func ExampleWithf() {
 	// true
 }
 
-func ExampleNewChain() {
+func ExampleNewNest() {
 	Configure(Newline, Suffix)
 	// wrapped errific error chain.
 	var (
@@ -121,10 +121,10 @@ func ExampleNewChain() {
 	fmt.Println(errors.Is(err3, io.EOF))
 
 	// Output:
-	// example error [errific/example_test.go:117.ExampleNewChain]
-	// error 3 [errific/example_test.go:114.ExampleNewChain]
-	// error 2 [errific/example_test.go:113.ExampleNewChain]
-	// error 1 [errific/example_test.go:112.ExampleNewChain]
+	// example error [errific/example_test.go:117.ExampleNewNest]
+	// error 3 [errific/example_test.go:114.ExampleNewNest]
+	// error 2 [errific/example_test.go:113.ExampleNewNest]
+	// error 1 [errific/example_test.go:112.ExampleNewNest]
 	// EOF
 	// true
 	// true
@@ -132,7 +132,7 @@ func ExampleNewChain() {
 	// true
 }
 
-func ExampleWrapfChain() {
+func ExampleWrapfNest() {
 	Configure(Newline, Suffix)
 	// wrapped & formatted errific error chain.
 	var (
@@ -148,10 +148,74 @@ func ExampleWrapfChain() {
 	fmt.Println(errors.Is(err2, io.EOF))
 
 	// Output:
-	// error 2 [errific/example_test.go:143.ExampleWrapfChain]
-	// format 1: error 1 [errific/example_test.go:142.ExampleWrapfChain]
+	// error 2 [errific/example_test.go:143.ExampleWrapfNest]
+	// format 1: error 1 [errific/example_test.go:142.ExampleWrapfNest]
 	// format 0: EOF
 	// true
 	// true
+	// true
+}
+
+func ExampleWithfNest() {
+	Configure(Newline, Suffix)
+	var (
+		Err1 Err = "error 1"
+		Err2 Err = "error 2"
+	)
+	err1 := Err1.Withf("with format %d", 1).Join(io.EOF)
+	err2 := Err2.Withf("with format %d", 2).Join(err1)
+
+	fmt.Println(err2)
+	fmt.Println(errors.Is(err2, Err2))
+	fmt.Println(errors.Is(err2, Err1))
+	fmt.Println(errors.Is(err2, io.EOF))
+
+	// Output:
+	// error 2: with format 2 [errific/example_test.go:166.ExampleWithfNest]
+	// error 1: with format 1 [errific/example_test.go:165.ExampleWithfNest]
+	// EOF
+	// true
+	// true
+	// true
+}
+
+func ExampleWithfChain() {
+	Configure(Newline, Suffix)
+	var ErrExample Err = "example error"
+
+	err := ErrExample.
+		Withf("first %d", 1).
+		Withf("second %d", 2).
+		Withf("third %d", 3).
+		Join(io.EOF)
+
+	fmt.Println(err)
+	fmt.Println(errors.Is(err, io.EOF))
+
+	// Output:
+	// example error: first 1: second 2: third 3 [errific/example_test.go:187.ExampleWithfChain]
+	// EOF
+	// true
+}
+
+func ExampleWrapfChain() {
+	Configure(Newline, Suffix)
+	var ErrExample Err = "example error"
+
+	err := ErrExample.
+		Wrapf("first %d", 1).
+		Wrapf("second %d", 2).
+		Wrapf("third %d", 3).
+		Join(io.EOF)
+
+	fmt.Println(err)
+	fmt.Println(errors.Is(err, io.EOF))
+
+	// Output:
+	// example error [errific/example_test.go:206.ExampleWrapfChain]
+	// first 1
+	// second 2
+	// third 3
+	// EOF
 	// true
 }
