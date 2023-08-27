@@ -156,25 +156,8 @@ func callstack() (caller string, stack []byte) {
 		return "", stack
 	}
 
-	parseFrame := func(frame runtime.Frame) string {
-		funcParts := strings.Split(frame.Function, "/")
-		funcParts = strings.Split(funcParts[len(funcParts)-1], ".")
-		callFunc := funcParts[len(funcParts)-1]
-		callFile := strings.TrimPrefix(frame.File, runtime.GOROOT())
-		callFile = strings.TrimPrefix(callFile, root)
-
-		callLine := frame.Line
-
-		return fmt.Sprintf("%s:%d.%s", callFile, callLine, callFunc)
-	}
-
 	frames := runtime.CallersFrames(pc)
-
 	frame, more := frames.Next()
-	if strings.HasPrefix(frame.File, runtime.GOROOT()) {
-		return caller, stack
-	}
-
 	caller = parseFrame(frame)
 
 	if !more {
@@ -192,4 +175,19 @@ func callstack() (caller string, stack []byte) {
 	}
 
 	return caller, stack
+}
+
+func parseFrame(frame runtime.Frame) string {
+	funcParts := strings.Split(frame.Function, "/")
+	funcParts = strings.Split(funcParts[len(funcParts)-1], ".")
+	callFunc := funcParts[len(funcParts)-1]
+	callFile := frame.File
+	for _, trimPrefix := range c.trimPrefixes {
+		callFile = strings.TrimPrefix(callFile, trimPrefix)
+	}
+	callFile = strings.TrimPrefix(callFile, runtime.GOROOT())
+	callFile = strings.TrimPrefix(callFile, root)
+	callLine := frame.Line
+
+	return fmt.Sprintf("%s:%d.%s", callFile, callLine, callFunc)
 }

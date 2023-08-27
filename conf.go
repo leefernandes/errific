@@ -8,6 +8,12 @@ import (
 
 // Configure errific options.
 func Configure(opts ...Option) {
+	// defaults
+	c.caller = Suffix
+	c.layout = Newline
+	c.withStack = false
+	c.trimPrefixes = nil
+
 	for _, opt := range opts {
 		switch o := opt.(type) {
 		case callerOption:
@@ -18,6 +24,9 @@ func Configure(opts ...Option) {
 
 		case withStackTraceOption:
 			c.withStack = o
+
+		case trimPrefixesOption:
+			c.trimPrefixes = o.Value()
 		}
 	}
 }
@@ -31,6 +40,8 @@ var c struct {
 	layout layoutOption
 	// WithStack will append stacktrace to end of message.
 	withStack withStackTraceOption
+	// TrimPrefixes will trim prefixes from caller frame filenames.
+	trimPrefixes []string
 }
 
 type callerOption int
@@ -68,6 +79,23 @@ const (
 	WithStack withStackTraceOption = true
 )
 
+type trimPrefixesOption struct {
+	prefixes []string
+}
+
+func (trimPrefixesOption) ErrificOption() {}
+
+func (t trimPrefixesOption) Value() []string {
+	return t.prefixes
+}
+
+var (
+	// TrimPrefixes from caller frame filenames.
+	TrimPrefixes = func(prefixes ...string) trimPrefixesOption {
+		return trimPrefixesOption{prefixes: prefixes}
+	}
+)
+
 type Option interface {
 	ErrificOption()
 }
@@ -75,7 +103,6 @@ type Option interface {
 var root string
 
 func init() {
-	// TODO find root of project, to strip from frame file.
 	_, file, _, _ := runtime.Caller(0)
 	root = fmt.Sprintf("%s/", filepath.Join(filepath.Dir(file), ".."))
 }
