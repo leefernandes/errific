@@ -18,12 +18,7 @@ func ExampleWithStack() {
 
 	// Output:
 	// example error [errific/examples/example_withstack_test.go:15.ExampleWithStack]
-	//   /src/testing/run_example.go:63.runExample
-	//   /src/testing/example.go:44.runExamples
-	//   /src/testing/testing.go:1927.Run
 	//   _testmain.go:75.main
-	//   /src/runtime/proc.go:267.main
-	//   /src/runtime/asm_amd64.s:1650.goexit
 	// true
 }
 
@@ -42,14 +37,9 @@ func ExampleWithStackBubbled() {
 	fmt.Println(errors.Is(err5, ErrRoot))
 
 	// Output:
-	// top error: fmt wrapped 3: dynamic error [errific/examples/example_withstack_test.go:37.ExampleWithStackBubbled]
-	// fmt wrapped 1: root error [errific/examples/example_withstack_test.go:35.ExampleWithStackBubbled]
-	// EOF [errific/examples/example_withstack_test.go:39.ExampleWithStackBubbled]
-	//   /src/testing/run_example.go:63.runExample
-	//   /src/testing/example.go:44.runExamples
-	//   /src/testing/testing.go:1927.Run
+	// top error: fmt wrapped 3: dynamic error [errific/examples/example_withstack_test.go:32.ExampleWithStackBubbled]
+	// fmt wrapped 1: root error [errific/examples/example_withstack_test.go:30.ExampleWithStackBubbled]
+	// EOF [errific/examples/example_withstack_test.go:34.ExampleWithStackBubbled]
 	//   _testmain.go:75.main
-	//   /src/runtime/proc.go:267.main
-	//   /src/runtime/asm_amd64.s:1650.goexit
 	// true
 }
