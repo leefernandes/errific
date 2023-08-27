@@ -20,7 +20,7 @@ func Configure(opts ...Option) {
 	}
 
 	c.trimPrefixes = []string{filepath.Dir(cwd) + "/"}
-	fmt.Println("trim", c.trimPrefixes)
+	fmt.Println("cwd", cwd)
 
 	for _, opt := range opts {
 		switch o := opt.(type) {
