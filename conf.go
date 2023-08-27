@@ -15,6 +15,9 @@ func Configure(opts ...Option) {
 
 		case layoutOption:
 			c.layout = o
+
+		case withStackTraceOption:
+			c.withStack = o
 		}
 	}
 }
@@ -26,6 +29,8 @@ var c struct {
 	// Layout will configure the layout of wrapped errors: Newline|Inline.
 	// Default is Newline.
 	layout layoutOption
+	// WithStack will append stacktrace to end of message.
+	withStack withStackTraceOption
 }
 
 type callerOption int
@@ -52,6 +57,15 @@ const (
 	Newline layoutOption = iota
 	// Inline wraps errors with ↩.
 	Inline
+)
+
+type withStackTraceOption bool
+
+func (withStackTraceOption) ErrificOption() {}
+
+const (
+	// Include stacktrace in error message.
+	WithStack withStackTraceOption = true
 )
 
 type Option interface {
