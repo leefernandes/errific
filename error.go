@@ -200,9 +200,10 @@ func callstack(errs []any) (caller string, stack []byte) {
 
 	for {
 		frame, more := frames.Next()
-
-		caller := fmt.Sprintf("\n  %s", parseFrame(frame))
-		stack = append(stack, caller...)
+		if !strings.HasPrefix(frame.File, runtime.GOROOT()) {
+			caller := fmt.Sprintf("\n  %s", parseFrame(frame))
+			stack = append(stack, caller...)
+		}
 		if !more {
 			break
 		}
