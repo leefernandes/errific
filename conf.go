@@ -2,6 +2,7 @@ package errific
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 )
@@ -13,6 +14,7 @@ func Configure(opts ...Option) {
 	c.layout = Newline
 	c.withStack = false
 	c.trimPrefixes = nil
+	c.trimCWD = false
 
 	for _, opt := range opts {
 		switch o := opt.(type) {
@@ -26,8 +28,20 @@ func Configure(opts ...Option) {
 			c.withStack = o
 
 		case trimPrefixesOption:
-			c.trimPrefixes = o.Value()
+			c.trimPrefixes = o.Prefixes()
+
+		case trimCWDOption:
+			c.trimCWD = o
 		}
+	}
+
+	if c.trimCWD {
+		cwd, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+
+		c.trimPrefixes = append([]string{filepath.Dir(cwd) + "/"}, c.trimPrefixes...)
 	}
 }
 
@@ -39,9 +53,13 @@ var c struct {
 	// Default is Newline.
 	layout layoutOption
 	// WithStack will append stacktrace to end of message.
+	// Default is not including the stack.
 	withStack withStackTraceOption
 	// TrimPrefixes will trim prefixes from caller frame filenames.
 	trimPrefixes []string
+	// TrimCWD will trim the current working directory from filenames.
+	// Default is false.
+	trimCWD trimCWDOption
 }
 
 type callerOption int
@@ -85,7 +103,7 @@ type trimPrefixesOption struct {
 
 func (trimPrefixesOption) ErrificOption() {}
 
-func (t trimPrefixesOption) Value() []string {
+func (t trimPrefixesOption) Prefixes() []string {
 	return t.prefixes
 }
 
@@ -94,6 +112,15 @@ var (
 	TrimPrefixes = func(prefixes ...string) trimPrefixesOption {
 		return trimPrefixesOption{prefixes: prefixes}
 	}
+)
+
+type trimCWDOption bool
+
+func (trimCWDOption) ErrificOption() {}
+
+const (
+	// Trim current working directory from filenames.
+	TrimCWD trimCWDOption = true
 )
 
 type Option interface {
