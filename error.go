@@ -1,6 +1,7 @@
 package errific
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -23,7 +24,12 @@ type Err string
 //
 //	return ErrProcessThing.New(err)
 func (e Err) New(errs ...error) errific {
-	caller, stack := callstack()
+	a := make([]any, len(errs))
+	for i := range errs {
+		a[i] = errs[i]
+	}
+
+	caller, stack := callstack(a)
 	return errific{
 		err:    e,
 		errs:   errs,
@@ -39,7 +45,7 @@ func (e Err) New(errs ...error) errific {
 //
 //	return ErrProcessThing.Errorf("abc")
 func (e Err) Errorf(a ...any) errific {
-	caller, stack := callstack()
+	caller, stack := callstack(a)
 	return errific{
 		err:    fmt.Errorf(e.Error(), a...),
 		caller: caller,
@@ -54,7 +60,7 @@ func (e Err) Errorf(a ...any) errific {
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
 func (e Err) Withf(format string, a ...any) errific {
-	caller, stack := callstack()
+	caller, stack := callstack(a)
 	format = e.Error() + ": " + format
 	return errific{
 		err:    fmt.Errorf(format, a...),
@@ -71,7 +77,7 @@ func (e Err) Withf(format string, a ...any) errific {
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
 func (e Err) Wrapf(format string, a ...any) errific {
-	caller, stack := callstack()
+	caller, stack := callstack(a)
 	return errific{
 		err:    e,
 		errs:   []error{fmt.Errorf(format, a...)},
@@ -115,7 +121,9 @@ func (e errific) Error() (msg string) {
 		}
 	}
 
+	// TODO prevent duplicate stacking of the stacks.
 	if c.withStack && len(e.stack) > 0 {
+		msg = strings.ReplaceAll(msg, string(e.stack), "")
 		msg += string(e.stack)
 	}
 
@@ -149,7 +157,23 @@ func (e errific) Unwrap() []error {
 	return errs
 }
 
-func callstack() (caller string, stack []byte) {
+func unwrapStack(errs []any) []byte {
+	for _, err := range errs {
+		if err == nil {
+			return nil
+		}
+		if e, ok := err.(errific); ok {
+			return e.stack
+		}
+
+		if err, ok := err.(error); ok {
+			return unwrapStack([]any{errors.Unwrap(err)})
+		}
+	}
+	return nil
+}
+
+func callstack(errs []any) (caller string, stack []byte) {
 	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	if n == 0 {
@@ -159,6 +183,16 @@ func callstack() (caller string, stack []byte) {
 	frames := runtime.CallersFrames(pc)
 	frame, more := frames.Next()
 	caller = parseFrame(frame)
+
+	if !c.withStack {
+		return caller, stack
+	}
+
+	stack = unwrapStack(errs)
+
+	if len(stack) > 0 {
+		return caller, stack
+	}
 
 	if !more {
 		return caller, stack
