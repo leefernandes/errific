@@ -1,6 +1,7 @@
 package errific
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"strings"
@@ -22,9 +23,14 @@ type Err string
 //	var ErrProcessThing errific.Err = "error processing a thing"
 //
 //	return ErrProcessThing.New(err)
-func (e Err) New(errs ...error) errific {
-	caller, stack := callstack()
-	return errific{
+func (e Err) New(errs ...error) *errific {
+	a := make([]any, len(errs))
+	for i := range errs {
+		a[i] = errs[i]
+	}
+
+	caller, stack := callstack(a)
+	return &errific{
 		err:    e,
 		errs:   errs,
 		caller: caller,
@@ -38,9 +44,9 @@ func (e Err) New(errs ...error) errific {
 //	var ErrProcessThing errific.Err = "error processing thing id: '%s'"
 //
 //	return ErrProcessThing.Errorf("abc")
-func (e Err) Errorf(a ...any) errific {
-	caller, stack := callstack()
-	return errific{
+func (e Err) Errorf(a ...any) *errific {
+	caller, stack := callstack(a)
+	return &errific{
 		err:    fmt.Errorf(e.Error(), a...),
 		caller: caller,
 		unwrap: []error{e},
@@ -53,10 +59,10 @@ func (e Err) Errorf(a ...any) errific {
 //	var ErrProcessThing errific.Err = "error processing thing"
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
-func (e Err) Withf(format string, a ...any) errific {
-	caller, stack := callstack()
+func (e Err) Withf(format string, a ...any) *errific {
+	caller, stack := callstack(a)
 	format = e.Error() + ": " + format
-	return errific{
+	return &errific{
 		err:    fmt.Errorf(format, a...),
 		caller: caller,
 		unwrap: []error{e},
@@ -70,9 +76,9 @@ func (e Err) Withf(format string, a ...any) errific {
 //	var ErrProcessThing errific.Err = "error processing thing"
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
-func (e Err) Wrapf(format string, a ...any) errific {
-	caller, stack := callstack()
-	return errific{
+func (e Err) Wrapf(format string, a ...any) *errific {
+	caller, stack := callstack(a)
+	return &errific{
 		err:    e,
 		errs:   []error{fmt.Errorf(format, a...)},
 		caller: caller,
@@ -92,7 +98,7 @@ type errific struct {
 	stack  []byte  // optional stack buffer.
 }
 
-func (e errific) Error() (msg string) {
+func (e *errific) Error() (msg string) {
 	switch c.caller {
 	case Disabled:
 
@@ -115,31 +121,33 @@ func (e errific) Error() (msg string) {
 		}
 	}
 
+	// TODO prevent duplicate stacking of the stacks.
 	if c.withStack && len(e.stack) > 0 {
+		msg = strings.ReplaceAll(msg, string(e.stack), "")
 		msg += string(e.stack)
 	}
 
 	return msg
 }
 
-func (e errific) Join(errs ...error) error {
+func (e *errific) Join(errs ...error) error {
 	e.errs = append(e.errs, errs...)
 	return e
 }
 
-func (e errific) Withf(format string, a ...any) errific {
+func (e *errific) Withf(format string, a ...any) *errific {
 	format = e.err.Error() + ": " + format
 	e.err = fmt.Errorf(format, a...)
 	e.unwrap = append(e.unwrap, e)
 	return e
 }
 
-func (e errific) Wrapf(format string, a ...any) errific {
+func (e *errific) Wrapf(format string, a ...any) *errific {
 	e.errs = append(e.errs, fmt.Errorf(format, a...))
 	return e
 }
 
-func (e errific) Unwrap() []error {
+func (e *errific) Unwrap() []error {
 	var errs []error
 	if e.err != nil {
 		errs = append(errs, e.err)
@@ -149,7 +157,33 @@ func (e errific) Unwrap() []error {
 	return errs
 }
 
-func callstack() (caller string, stack []byte) {
+func unwrapStack(errs []any) []byte {
+	if !c.withStack {
+		return nil
+	}
+	for _, err := range errs {
+		if stack := bubble(err); stack != nil {
+			return stack
+		}
+	}
+	return nil
+}
+
+func bubble(err any) []byte {
+	if err == nil {
+		return nil
+	}
+	if e, ok := err.(*errific); ok {
+		return e.stack
+	}
+
+	if err, ok := err.(error); ok {
+		return bubble(errors.Unwrap(err))
+	}
+	return nil
+}
+
+func callstack(errs []any) (caller string, stack []byte) {
 	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	if n == 0 {
@@ -159,6 +193,15 @@ func callstack() (caller string, stack []byte) {
 	frames := runtime.CallersFrames(pc)
 	frame, more := frames.Next()
 	caller = parseFrame(frame)
+
+	if !c.withStack {
+		return caller, stack
+	}
+
+	stack = unwrapStack(errs)
+	if len(stack) > 0 {
+		return caller, stack
+	}
 
 	if !more {
 		return caller, stack
