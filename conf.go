@@ -2,6 +2,7 @@ package errific
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 )
@@ -12,7 +13,14 @@ func Configure(opts ...Option) {
 	c.caller = Suffix
 	c.layout = Newline
 	c.withStack = false
-	c.trimPrefixes = nil
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	c.trimPrefixes = []string{filepath.Dir(cwd) + "/"}
+	fmt.Println("trim", c.trimPrefixes)
 
 	for _, opt := range opts {
 		switch o := opt.(type) {
