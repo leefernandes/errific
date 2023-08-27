@@ -158,27 +158,17 @@ func (e errific) Unwrap() []error {
 }
 
 func unwrapStack(errs []any) []byte {
-	if !c.withStack {
-		return nil
-	}
 	for _, err := range errs {
-		if stack := bubble(err); stack != nil {
-			return stack
+		if err == nil {
+			return nil
 		}
-	}
-	return nil
-}
+		if e, ok := err.(errific); ok {
+			return e.stack
+		}
 
-func bubble(err any) []byte {
-	if err == nil {
-		return nil
-	}
-	if e, ok := err.(errific); ok {
-		return e.stack
-	}
-
-	if err, ok := err.(error); ok {
-		return bubble(errors.Unwrap(err))
+		if err, ok := err.(error); ok {
+			return unwrapStack([]any{errors.Unwrap(err)})
+		}
 	}
 	return nil
 }
@@ -199,6 +189,7 @@ func callstack(errs []any) (caller string, stack []byte) {
 	}
 
 	stack = unwrapStack(errs)
+
 	if len(stack) > 0 {
 		return caller, stack
 	}
