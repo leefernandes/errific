@@ -23,10 +23,12 @@ type Err string
 //
 //	return ErrProcessThing.New(err)
 func (e Err) New(errs ...error) errific {
+	caller, stack := callstack()
 	return errific{
 		err:    e,
 		errs:   errs,
-		caller: caller(),
+		caller: caller,
+		stack:  stack,
 	}
 }
 
@@ -37,10 +39,12 @@ func (e Err) New(errs ...error) errific {
 //
 //	return ErrProcessThing.Errorf("abc")
 func (e Err) Errorf(a ...any) errific {
+	caller, stack := callstack()
 	return errific{
 		err:    fmt.Errorf(e.Error(), a...),
-		caller: caller(),
+		caller: caller,
 		unwrap: []error{e},
+		stack:  stack,
 	}
 }
 
@@ -50,11 +54,13 @@ func (e Err) Errorf(a ...any) errific {
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
 func (e Err) Withf(format string, a ...any) errific {
+	caller, stack := callstack()
 	format = e.Error() + ": " + format
 	return errific{
 		err:    fmt.Errorf(format, a...),
-		caller: caller(),
+		caller: caller,
 		unwrap: []error{e},
+		stack:  stack,
 	}
 }
 
@@ -65,10 +71,12 @@ func (e Err) Withf(format string, a ...any) errific {
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
 func (e Err) Wrapf(format string, a ...any) errific {
+	caller, stack := callstack()
 	return errific{
 		err:    e,
 		errs:   []error{fmt.Errorf(format, a...)},
-		caller: caller(),
+		caller: caller,
+		stack:  stack,
 	}
 }
 
@@ -81,6 +89,7 @@ type errific struct {
 	errs   []error // errors used in string output, and satisfy errors.Is.
 	unwrap []error // errors not used in string output, but satisfy errors.Is.
 	caller string  // caller information.
+	stack  []byte  // optional stack buffer.
 }
 
 func (e errific) Error() (msg string) {
@@ -104,6 +113,10 @@ func (e errific) Error() (msg string) {
 		for i := range e.errs {
 			msg = fmt.Sprintf("%s\n%s", msg, e.errs[i].Error())
 		}
+	}
+
+	if c.withStack && len(e.stack) > 0 {
+		msg += string(e.stack)
 	}
 
 	return msg
@@ -136,19 +149,47 @@ func (e errific) Unwrap() []error {
 	return errs
 }
 
-func caller() string {
-	pc := make([]uintptr, 1)
+func callstack() (caller string, stack []byte) {
+	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	if n == 0 {
-		return ""
+		return "", stack
 	}
 
-	frames := runtime.CallersFrames(pc[:n])
-	frame, _ := frames.Next()
-	funcParts := strings.Split(frame.Function, "/")
-	funcParts = strings.Split(funcParts[len(funcParts)-1], ".")
-	callFunc := funcParts[len(funcParts)-1]
-	callFile := strings.TrimPrefix(frame.File, root)
-	callLine := frame.Line
-	return fmt.Sprintf("%s:%d.%s", callFile, callLine, callFunc)
+	parseFrame := func(frame runtime.Frame) string {
+		funcParts := strings.Split(frame.Function, "/")
+		funcParts = strings.Split(funcParts[len(funcParts)-1], ".")
+		callFunc := funcParts[len(funcParts)-1]
+		callFile := strings.TrimPrefix(frame.File, runtime.GOROOT())
+		callFile = strings.TrimPrefix(callFile, root)
+
+		callLine := frame.Line
+
+		return fmt.Sprintf("%s:%d.%s", callFile, callLine, callFunc)
+	}
+
+	frames := runtime.CallersFrames(pc)
+
+	frame, more := frames.Next()
+	if strings.HasPrefix(frame.File, runtime.GOROOT()) {
+		return caller, stack
+	}
+
+	caller = parseFrame(frame)
+
+	if !more {
+		return caller, stack
+	}
+
+	for {
+		frame, more := frames.Next()
+
+		caller := fmt.Sprintf("\n  %s", parseFrame(frame))
+		stack = append(stack, caller...)
+		if !more {
+			break
+		}
+	}
+
+	return caller, stack
 }

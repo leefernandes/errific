@@ -219,3 +219,21 @@ func ExampleWrapfChain() {
 	// EOF
 	// true
 }
+
+func ExampleWithStack() {
+	Configure(Newline, Suffix, WithStack)
+	var ErrExample Err = "example error"
+	err := ErrExample.New()
+	fmt.Println(err)
+	fmt.Println(errors.Is(err, ErrExample))
+
+	// Output:
+	// example error [errific/example_test.go:226.ExampleWithStack]
+	//   /src/testing/run_example.go:63.runExample
+	//   /src/testing/example.go:44.runExamples
+	//   /src/testing/testing.go:1927.Run
+	//   _testmain.go:71.main
+	//   /src/runtime/proc.go:267.main
+	//   /src/runtime/asm_amd64.s:1650.goexit
+	// true
+}
