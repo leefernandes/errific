@@ -237,9 +237,9 @@ func callstack(errs []any) (caller string, stack []byte) {
 
 	for {
 		frame, more := frames.Next()
-		if !strings.HasPrefix(frame.File, runtime.GOROOT()) {
-			caller := fmt.Sprintf("\n  %s", parseFrame(frame))
-			stack = append(stack, caller...)
+		if !strings.HasPrefix(frame.File, goroot) {
+			frameStr := fmt.Sprintf("\n  %s", parseFrame(frame))
+			stack = append(stack, frameStr...)
 		}
 		if !more {
 			break
@@ -262,7 +262,7 @@ func parseFrame(frame runtime.Frame) string {
 	for _, trimPrefix := range trimPrefixes {
 		callFile = strings.TrimPrefix(callFile, trimPrefix)
 	}
-	callFile = strings.TrimPrefix(callFile, runtime.GOROOT())
+	callFile = strings.TrimPrefix(callFile, goroot)
 	callFile = strings.TrimPrefix(callFile, root)
 	callLine := frame.Line
 

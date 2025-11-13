@@ -3,8 +3,10 @@ package errific
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 )
 
@@ -137,8 +139,16 @@ type Option interface {
 }
 
 var root string
+var goroot string
 
 func init() {
 	_, file, _, _ := runtime.Caller(0)
 	root = fmt.Sprintf("%s/", filepath.Join(filepath.Dir(file), ".."))
+
+	// Get GOROOT using "go env GOROOT" as runtime.GOROOT is deprecated
+	if cmd := exec.Command("go", "env", "GOROOT"); cmd != nil {
+		if output, err := cmd.Output(); err == nil {
+			goroot = strings.TrimSpace(string(output))
+		}
+	}
 }
