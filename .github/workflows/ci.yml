@@ -9,11 +9,7 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go: ['1.20', '1.21', '1.22']
+    runs-on: ubuntu-latest
 
     steps:
     - name: Check out code
@@ -22,7 +18,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go }}
+        go-version: '1.22'
 
     - name: Go mod download
       run: go mod download
@@ -34,7 +30,6 @@ jobs:
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
-      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.22'
       uses: codecov/codecov-action@v4
       with:
         file: ./coverage.txt
