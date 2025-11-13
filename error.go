@@ -1,3 +1,28 @@
+// Package errific provides enhanced error handling for Go with caller information,
+// clean error wrapping, and helpful formatting methods.
+//
+// errific simplifies error creation by adding runtime caller metadata (file, line, function)
+// to errors, making debugging easier without sacrificing clean error messages. It supports
+// error chaining, formatted messages, and configurable output options including stack traces.
+//
+// Basic usage:
+//
+//	var ErrProcessThing errific.Err = "error processing thing"
+//
+//	func process() error {
+//	    if err := validate(); err != nil {
+//	        return ErrProcessThing.New(err)
+//	    }
+//	    return nil
+//	}
+//
+// The resulting error includes caller information:
+//
+//	error processing thing [mypackage/file.go:42.process]
+//	validation failed [mypackage/validate.go:15.validate]
+//
+// Configuration options include caller position (prefix/suffix/disabled),
+// layout (newline/inline), stack traces, and path trimming.
 package errific
 
 import (
@@ -99,7 +124,13 @@ type errific struct {
 }
 
 func (e errific) Error() (msg string) {
-	switch c.caller {
+	cMu.RLock()
+	caller := c.caller
+	layout := c.layout
+	withStack := c.withStack
+	cMu.RUnlock()
+
+	switch caller {
 	case Disabled:
 
 	case Prefix:
@@ -109,7 +140,7 @@ func (e errific) Error() (msg string) {
 		msg = fmt.Sprintf("%s [%s]", e.err.Error(), e.caller)
 	}
 
-	switch c.layout {
+	switch layout {
 	case Inline:
 		for i := range e.errs {
 			msg = fmt.Sprintf("%s ↩ %s", msg, e.errs[i].Error())
@@ -121,10 +152,11 @@ func (e errific) Error() (msg string) {
 		}
 	}
 
-	// TODO prevent duplicate stacking of the stacks.
-	if c.withStack && len(e.stack) > 0 {
-		msg = strings.ReplaceAll(msg, string(e.stack), "")
-		msg += string(e.stack)
+	if withStack && len(e.stack) > 0 {
+		// Remove duplicate stack traces from nested errors before appending
+		stackStr := string(e.stack)
+		msg = strings.ReplaceAll(msg, stackStr, "")
+		msg += stackStr
 	}
 
 	return msg
@@ -136,9 +168,10 @@ func (e errific) Join(errs ...error) error {
 }
 
 func (e errific) Withf(format string, a ...any) errific {
+	originalErr := e.err
 	format = e.err.Error() + ": " + format
 	e.err = fmt.Errorf(format, a...)
-	e.unwrap = append(e.unwrap, e)
+	e.unwrap = append(e.unwrap, originalErr)
 	return e
 }
 
@@ -184,7 +217,11 @@ func callstack(errs []any) (caller string, stack []byte) {
 	frame, more := frames.Next()
 	caller = parseFrame(frame)
 
-	if !c.withStack {
+	cMu.RLock()
+	withStack := c.withStack
+	cMu.RUnlock()
+
+	if !withStack {
 		return caller, stack
 	}
 
@@ -217,7 +254,12 @@ func parseFrame(frame runtime.Frame) string {
 	funcParts = strings.Split(funcParts[len(funcParts)-1], ".")
 	callFunc := funcParts[len(funcParts)-1]
 	callFile := frame.File
-	for _, trimPrefix := range c.trimPrefixes {
+
+	cMu.RLock()
+	trimPrefixes := c.trimPrefixes
+	cMu.RUnlock()
+
+	for _, trimPrefix := range trimPrefixes {
 		callFile = strings.TrimPrefix(callFile, trimPrefix)
 	}
 	callFile = strings.TrimPrefix(callFile, runtime.GOROOT())

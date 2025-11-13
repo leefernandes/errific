@@ -5,10 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 )
 
 // Configure errific options.
 func Configure(opts ...Option) {
+	cMu.Lock()
+	defer cMu.Unlock()
+
 	// defaults
 	c.caller = Suffix
 	c.layout = Newline
@@ -38,29 +42,34 @@ func Configure(opts ...Option) {
 	if c.trimCWD {
 		cwd, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			// Fallback to not trimming CWD if we can't get it
+			c.trimCWD = false
+			return
 		}
 
 		c.trimPrefixes = append([]string{filepath.Dir(cwd) + "/"}, c.trimPrefixes...)
 	}
 }
 
-var c struct {
-	// Caller will configure the caller: Suffix|Prefix|Disabled.
-	// Default is Suffix.
-	caller callerOption
-	// Layout will configure the layout of wrapped errors: Newline|Inline.
-	// Default is Newline.
-	layout layoutOption
-	// WithStack will append stacktrace to end of message.
-	// Default is not including the stack.
-	withStack withStackTraceOption
-	// TrimPrefixes will trim prefixes from caller frame filenames.
-	trimPrefixes []string
-	// TrimCWD will trim the current working directory from filenames.
-	// Default is false.
-	trimCWD trimCWDOption
-}
+var (
+	c struct {
+		// Caller will configure the caller: Suffix|Prefix|Disabled.
+		// Default is Suffix.
+		caller callerOption
+		// Layout will configure the layout of wrapped errors: Newline|Inline.
+		// Default is Newline.
+		layout layoutOption
+		// WithStack will append stacktrace to end of message.
+		// Default is not including the stack.
+		withStack withStackTraceOption
+		// TrimPrefixes will trim prefixes from caller frame filenames.
+		trimPrefixes []string
+		// TrimCWD will trim the current working directory from filenames.
+		// Default is false.
+		trimCWD trimCWDOption
+	}
+	cMu sync.RWMutex
+)
 
 type callerOption int
 

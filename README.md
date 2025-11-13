@@ -46,4 +46,4 @@ only cats are allowed, cannot register 'hamster' [/tmp/sandbox4095574913/prog.go
 
 Try it on the <a href="https://go.dev/play/p/N7asgc_1i-J"><img src="./gopher.png" height="14px" /></a> [playground](https://go.dev/play/p/N7asgc_1i-J)!
 
-More to come!  In the meantime look at the [example tests](https://github.com/leefernandes/errific/blob/main/example_test.go).
+More to come!  In the meantime look at the [example tests](https://github.com/leefernandes/errific/tree/main/examples).

@@ -8,7 +8,7 @@ import (
 	. "github.com/leefernandes/errific"
 )
 
-func ExampleWithStack() {
+func Example_withStack() {
 	Configure(WithStack)
 	var ErrExample Err = "example error"
 
@@ -17,12 +17,12 @@ func ExampleWithStack() {
 	fmt.Println(errors.Is(err, ErrExample))
 
 	// Output:
-	// example error [errific/examples/example_withstack_test.go:15.ExampleWithStack]
-	//   _testmain.go:75.main
+	// example error [errific/examples/example_withstack_test.go:15.Example_withStack]
+	//   _testmain.go:73.main
 	// true
 }
 
-func ExampleWithStackBubbled() {
+func Example_withStackBubbled() {
 	Configure(WithStack)
 	var ErrRoot Err = "root error"
 	var ErrTop Err = "top error"
@@ -37,9 +37,9 @@ func ExampleWithStackBubbled() {
 	fmt.Println(errors.Is(err5, ErrRoot))
 
 	// Output:
-	// top error: fmt wrapped 3: dynamic error [errific/examples/example_withstack_test.go:32.ExampleWithStackBubbled]
-	// fmt wrapped 1: root error [errific/examples/example_withstack_test.go:30.ExampleWithStackBubbled]
-	// EOF [errific/examples/example_withstack_test.go:34.ExampleWithStackBubbled]
-	//   _testmain.go:75.main
+	// top error: fmt wrapped 3: dynamic error [errific/examples/example_withstack_test.go:32.Example_withStackBubbled]
+	// fmt wrapped 1: root error [errific/examples/example_withstack_test.go:30.Example_withStackBubbled]
+	// EOF [errific/examples/example_withstack_test.go:34.Example_withStackBubbled]
+	//   _testmain.go:73.main
 	// true
 }

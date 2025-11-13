@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.20', '1.21', '1.22']
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go }}
+
+    - name: Go mod download
+      run: go mod download
+
+    - name: Go mod verify
+      run: go mod verify
+
+    - name: Run tests
+      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.go == '1.22'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+        args: --timeout=5m
+
+  vet:
+    name: Vet
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Run go vet
+      run: go vet ./...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build
+      run: go build -v ./...
+
+  examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Run example tests
+      run: go test -v ./examples/...

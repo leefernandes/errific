@@ -8,7 +8,7 @@ import (
 	. "github.com/leefernandes/errific"
 )
 
-func ExampleWithf() {
+func Example_withf() {
 	Configure() // default configuration
 	var ErrExample Err = "example error"
 	err := ErrExample.Withf("int (%d) string (%s): %w", 123, "yarn", io.EOF)
@@ -17,12 +17,12 @@ func ExampleWithf() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error: int (123) string (yarn): EOF [errific/examples/example_withf_test.go:14.ExampleWithf]
+	// example error: int (123) string (yarn): EOF [errific/examples/example_withf_test.go:14.Example_withf]
 	// true
 	// true
 }
 
-func ExampleWithfNest() {
+func Example_withfNest() {
 	Configure() // default configuration
 	var (
 		Err1 Err = "error 1"
@@ -37,15 +37,15 @@ func ExampleWithfNest() {
 	fmt.Println(errors.Is(err2, io.EOF))
 
 	// Output:
-	// error 2: with format 2 [errific/examples/example_withf_test.go:32.ExampleWithfNest]
-	// error 1: with format 1 [errific/examples/example_withf_test.go:31.ExampleWithfNest]
+	// error 2: with format 2 [errific/examples/example_withf_test.go:32.Example_withfNest]
+	// error 1: with format 1 [errific/examples/example_withf_test.go:31.Example_withfNest]
 	// EOF
 	// true
 	// true
 	// true
 }
 
-func ExampleWithfChain() {
+func Example_withfChain() {
 	Configure() // default configuration
 	var ErrExample Err = "example error"
 
@@ -59,7 +59,7 @@ func ExampleWithfChain() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error: first 1: second 2: third 3 [errific/examples/example_withf_test.go:53.ExampleWithfChain]
+	// example error: first 1: second 2: third 3 [errific/examples/example_withf_test.go:53.Example_withfChain]
 	// EOF
 	// true
 }
