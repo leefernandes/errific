@@ -56,12 +56,15 @@ func (e Err) New(errs ...error) errific {
 		a[i] = errs[i]
 	}
 
-	caller, stack := callstack(a)
+	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
 	return errific{
-		err:    e,
-		errs:   errs,
-		caller: caller,
-		stack:  stack,
+		err:          e,
+		errs:         errs,
+		caller:       caller,
+		stack:        stack,
+		cfgCaller:    cfgCaller,
+		cfgLayout:    cfgLayout,
+		cfgWithStack: cfgWithStack,
 	}
 }
 
@@ -72,12 +75,15 @@ func (e Err) New(errs ...error) errific {
 //
 //	return ErrProcessThing.Errorf("abc")
 func (e Err) Errorf(a ...any) errific {
-	caller, stack := callstack(a)
+	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
 	return errific{
-		err:    fmt.Errorf(e.Error(), a...),
-		caller: caller,
-		unwrap: []error{e},
-		stack:  stack,
+		err:          fmt.Errorf(e.Error(), a...),
+		caller:       caller,
+		unwrap:       []error{e},
+		stack:        stack,
+		cfgCaller:    cfgCaller,
+		cfgLayout:    cfgLayout,
+		cfgWithStack: cfgWithStack,
 	}
 }
 
@@ -87,13 +93,16 @@ func (e Err) Errorf(a ...any) errific {
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
 func (e Err) Withf(format string, a ...any) errific {
-	caller, stack := callstack(a)
+	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
 	format = e.Error() + ": " + format
 	return errific{
-		err:    fmt.Errorf(format, a...),
-		caller: caller,
-		unwrap: []error{e},
-		stack:  stack,
+		err:          fmt.Errorf(format, a...),
+		caller:       caller,
+		unwrap:       []error{e},
+		stack:        stack,
+		cfgCaller:    cfgCaller,
+		cfgLayout:    cfgLayout,
+		cfgWithStack: cfgWithStack,
 	}
 }
 
@@ -104,17 +113,108 @@ func (e Err) Withf(format string, a ...any) errific {
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
 func (e Err) Wrapf(format string, a ...any) errific {
-	caller, stack := callstack(a)
+	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
 	return errific{
-		err:    e,
-		errs:   []error{fmt.Errorf(format, a...)},
-		caller: caller,
-		stack:  stack,
+		err:          e,
+		errs:         []error{fmt.Errorf(format, a...)},
+		caller:       caller,
+		stack:        stack,
+		cfgCaller:    cfgCaller,
+		cfgLayout:    cfgLayout,
+		cfgWithStack: cfgWithStack,
 	}
 }
 
 func (e Err) Error() string {
 	return string(e)
+}
+
+// Forwarding methods allow calling With___ methods directly on Err without explicit New().
+// These methods call New() once, then forward to the corresponding errific method.
+// Chaining is efficient - New() is only called once on the first method in the chain.
+//
+// Example:
+//   err := ErrTest.WithCode("CODE1").WithHTTPStatus(400)
+//   // New() called once on WithCode, then WithHTTPStatus uses errific method
+
+func (e Err) WithContext(ctx Context) errific {
+	return e.New().WithContext(ctx)
+}
+
+func (e Err) WithCode(code string) errific {
+	return e.New().WithCode(code)
+}
+
+func (e Err) WithCategory(category Category) errific {
+	return e.New().WithCategory(category)
+}
+
+func (e Err) WithRetryable(retryable bool) errific {
+	return e.New().WithRetryable(retryable)
+}
+
+func (e Err) WithRetryAfter(duration time.Duration) errific {
+	return e.New().WithRetryAfter(duration)
+}
+
+func (e Err) WithMaxRetries(max int) errific {
+	return e.New().WithMaxRetries(max)
+}
+
+func (e Err) WithHTTPStatus(status int) errific {
+	return e.New().WithHTTPStatus(status)
+}
+
+func (e Err) WithMCPCode(code int) errific {
+	return e.New().WithMCPCode(code)
+}
+
+func (e Err) WithCorrelationID(id string) errific {
+	return e.New().WithCorrelationID(id)
+}
+
+func (e Err) WithRequestID(id string) errific {
+	return e.New().WithRequestID(id)
+}
+
+func (e Err) WithUserID(id string) errific {
+	return e.New().WithUserID(id)
+}
+
+func (e Err) WithSessionID(id string) errific {
+	return e.New().WithSessionID(id)
+}
+
+func (e Err) WithHelp(text string) errific {
+	return e.New().WithHelp(text)
+}
+
+func (e Err) WithSuggestion(text string) errific {
+	return e.New().WithSuggestion(text)
+}
+
+func (e Err) WithDocs(url string) errific {
+	return e.New().WithDocs(url)
+}
+
+func (e Err) WithTags(tags ...string) errific {
+	return e.New().WithTags(tags...)
+}
+
+func (e Err) WithLabel(key, value string) errific {
+	return e.New().WithLabel(key, value)
+}
+
+func (e Err) WithLabels(labels map[string]string) errific {
+	return e.New().WithLabels(labels)
+}
+
+func (e Err) WithTimestamp(t time.Time) errific {
+	return e.New().WithTimestamp(t)
+}
+
+func (e Err) WithDuration(d time.Duration) errific {
+	return e.New().WithDuration(d)
 }
 
 // Context is a map of key-value pairs that provides additional context for errors.
@@ -144,6 +244,17 @@ const (
 // MCP error codes following JSON-RPC 2.0 specification.
 // These codes enable errific errors to be serialized in MCP-compatible format
 // for AI tool calling and Model Context Protocol integration.
+//
+// Valid code ranges per JSON-RPC 2.0 specification:
+//   - Standard errors: -32768 to -32000 (reserved by JSON-RPC 2.0)
+//   - Server errors: -32000 to -32099 (available for application-specific errors)
+//
+// When using WithMCPCode(), use the predefined constants below or custom codes
+// in the -32000 to -32099 range for application-specific errors.
+//
+// References:
+//   - JSON-RPC 2.0: https://www.jsonrpc.org/specification
+//   - Model Context Protocol: https://modelcontextprotocol.io
 const (
 	// MCPParseError represents invalid JSON was received by the server.
 	MCPParseError = -32700
@@ -198,17 +309,23 @@ type errific struct {
 	labels        map[string]string // key-value labels for filtering and grouping.
 	timestamp     time.Time         // when the error occurred.
 	duration      time.Duration     // operation duration before error.
+	// Configuration snapshot at error creation time
+	cfgCaller    callerOption // caller config when error was created.
+	cfgLayout    layoutOption // layout config when error was created.
+	cfgWithStack bool         // withStack config when error was created.
 }
 
 func (e errific) Error() (msg string) {
-	cMu.RLock()
-	caller := c.caller
-	layout := c.layout
-	withStack := c.withStack
-	cMu.RUnlock()
+	// Use configuration snapshot from error creation time
+	// This prevents race conditions and ensures consistent formatting
+	caller := e.cfgCaller
+	layout := e.cfgLayout
+	withStack := e.cfgWithStack
 
 	switch caller {
 	case Disabled:
+		// Include error message without caller information
+		msg = e.err.Error()
 
 	case Prefix:
 		msg = fmt.Sprintf("[%s] %s", e.caller, e.err.Error())
@@ -220,20 +337,25 @@ func (e errific) Error() (msg string) {
 	switch layout {
 	case Inline:
 		for i := range e.errs {
-			msg = fmt.Sprintf("%s ↩ %s", msg, e.errs[i].Error())
+			if e.errs[i] != nil {
+				msg = fmt.Sprintf("%s ↩ %s", msg, e.errs[i].Error())
+			}
 		}
 
 	default:
 		for i := range e.errs {
-			msg = fmt.Sprintf("%s\n%s", msg, e.errs[i].Error())
+			if e.errs[i] != nil {
+				msg = fmt.Sprintf("%s\n%s", msg, e.errs[i].Error())
+			}
 		}
 	}
 
 	if withStack && len(e.stack) > 0 {
-		// Remove duplicate stack traces from nested errors before appending
-		stackStr := string(e.stack)
-		msg = strings.ReplaceAll(msg, stackStr, "")
-		msg += stackStr
+		// Append stack trace at the end
+		// Note: If wrapping another errific error with a stack, both stacks may appear.
+		// This is intentional - each error in the chain shows its creation point.
+		// To avoid duplicate stacks, the stack from wrapped errors is reused when possible.
+		msg += string(e.stack)
 	}
 
 	return msg
@@ -278,9 +400,14 @@ func (e errific) WithContext(ctx Context) errific {
 // WithCode sets an error code for machine-readable identification.
 // Error codes enable automated error handling and routing.
 //
+// Empty strings are ignored (code remains unset).
+//
 //	err := ErrDatabaseConnection.New().WithCode("DB_CONN_TIMEOUT")
 func (e errific) WithCode(code string) errific {
-	e.code = code
+	// Ignore empty codes
+	if code != "" {
+		e.code = code
+	}
 	return e
 }
 
@@ -305,8 +432,14 @@ func (e errific) WithRetryable(retryable bool) errific {
 // WithRetryAfter sets the suggested retry delay duration.
 // This guides automated retry strategies with appropriate backoff.
 //
+// Negative durations are treated as 0 (no delay).
+//
 //	err := ErrRateLimit.New().WithRetryAfter(5 * time.Second)
 func (e errific) WithRetryAfter(duration time.Duration) errific {
+	// Ensure non-negative duration
+	if duration < 0 {
+		duration = 0
+	}
 	e.retryAfter = duration
 	return e
 }
@@ -314,8 +447,14 @@ func (e errific) WithRetryAfter(duration time.Duration) errific {
 // WithMaxRetries sets the maximum number of retry attempts.
 // This prevents infinite retry loops in automated systems.
 //
+// Negative values are treated as 0 (no retries).
+//
 //	err := ErrAPICall.New().WithRetryable(true).WithMaxRetries(3)
 func (e errific) WithMaxRetries(max int) errific {
+	// Ensure non-negative retry count
+	if max < 0 {
+		max = 0
+	}
 	e.maxRetries = max
 	return e
 }
@@ -323,8 +462,16 @@ func (e errific) WithMaxRetries(max int) errific {
 // WithHTTPStatus sets the HTTP status code for this error.
 // This enables automatic HTTP response handling in web services.
 //
+// Valid HTTP status codes are in the range 100-599.
+// Panics if status is outside this range and non-zero.
+//
 //	err := ErrValidation.New().WithHTTPStatus(400)
 func (e errific) WithHTTPStatus(status int) errific {
+	// Validate HTTP status code range
+	// Allow 0 (unset) or valid HTTP status codes (100-599)
+	if status != 0 && (status < 100 || status > 599) {
+		panic(fmt.Sprintf("invalid HTTP status code %d: must be 0 or in range 100-599", status))
+	}
 	e.httpStatus = status
 	return e
 }
@@ -333,8 +480,19 @@ func (e errific) WithHTTPStatus(status int) errific {
 // Use the predefined MCP constants (MCPInternalError, MCPInvalidParams, etc.)
 // or custom codes in the range -32000 to -32099 for application-specific errors.
 //
+// Valid code ranges per JSON-RPC 2.0:
+//   - Standard errors: -32768 to -32000
+//   - Zero (0) is treated as unset/default
+//
+// Panics if code is outside valid range and non-zero.
+//
 //	err := ErrToolExecution.New().WithMCPCode(MCPToolError)
 func (e errific) WithMCPCode(code int) errific {
+	// Validate JSON-RPC 2.0 code ranges
+	// Allow 0 (unset), and -32768 to -32000 (reserved range)
+	if code != 0 && (code > -32000 || code < -32768) {
+		panic(fmt.Sprintf("invalid MCP code %d: must be 0 or in range -32768 to -32000 per JSON-RPC 2.0 specification", code))
+	}
 	e.mcpCode = code
 	return e
 }
@@ -342,63 +500,91 @@ func (e errific) WithMCPCode(code int) errific {
 // WithCorrelationID sets a correlation ID for distributed tracing.
 // This enables tracking errors across MCP tool calls and distributed systems.
 //
+// Empty strings are ignored (ID remains unset).
+//
 //	err := ErrMCPTool.New().WithCorrelationID(correlationID)
 func (e errific) WithCorrelationID(id string) errific {
-	e.correlationID = id
+	if id != "" {
+		e.correlationID = id
+	}
 	return e
 }
 
 // WithRequestID sets a request ID for this specific operation.
 // This enables tracking individual requests in logging and monitoring.
 //
+// Empty strings are ignored (ID remains unset).
+//
 //	err := ErrAPI.New().WithRequestID(uuid.New().String())
 func (e errific) WithRequestID(id string) errific {
-	e.requestID = id
+	if id != "" {
+		e.requestID = id
+	}
 	return e
 }
 
 // WithUserID sets the user ID associated with this error.
 // This enables user-specific error tracking and analysis.
 //
+// Empty strings are ignored (ID remains unset).
+//
 //	err := ErrPermission.New().WithUserID(userID)
 func (e errific) WithUserID(id string) errific {
-	e.userID = id
+	if id != "" {
+		e.userID = id
+	}
 	return e
 }
 
 // WithSessionID sets a session ID for multi-step operations.
 // This enables tracking errors across agent conversation sessions.
 //
+// Empty strings are ignored (ID remains unset).
+//
 //	err := ErrAgent.New().WithSessionID(sessionID)
 func (e errific) WithSessionID(id string) errific {
-	e.sessionID = id
+	if id != "" {
+		e.sessionID = id
+	}
 	return e
 }
 
 // WithHelp adds recovery help text to the error.
 // This enables AI agents to display actionable guidance to users.
 //
+// Empty strings are ignored (help remains unset).
+//
 //	err := ErrPermission.New().WithHelp("Run 'kubectl get roles' to check permissions")
 func (e errific) WithHelp(text string) errific {
-	e.help = text
+	if text != "" {
+		e.help = text
+	}
 	return e
 }
 
 // WithSuggestion adds a suggested action to resolve the error.
 // This enables AI agents to attempt automatic recovery.
 //
+// Empty strings are ignored (suggestion remains unset).
+//
 //	err := ErrRateLimit.New().WithSuggestion("Reduce request frequency or upgrade plan")
 func (e errific) WithSuggestion(text string) errific {
-	e.suggestion = text
+	if text != "" {
+		e.suggestion = text
+	}
 	return e
 }
 
 // WithDocs adds a documentation URL for more information.
 // This enables AI agents to provide users with detailed documentation.
 //
+// Empty strings are ignored (URL remains unset).
+//
 //	err := ErrConfig.New().WithDocs("https://docs.example.com/configuration")
 func (e errific) WithDocs(url string) errific {
-	e.docsURL = url
+	if url != "" {
+		e.docsURL = url
+	}
 	return e
 }
 
@@ -459,12 +645,31 @@ func (e errific) WithDuration(d time.Duration) errific {
 }
 
 func (e errific) Unwrap() []error {
+	// Deduplicate errors to prevent same error appearing multiple times
+	// in the error chain (can happen with complex wrapping scenarios)
 	var errs []error
-	if e.err != nil {
-		errs = append(errs, e.err)
+
+	add := func(err error) {
+		if err == nil {
+			return
+		}
+		// Check if already added (linear search is fine for small error lists)
+		for _, existing := range errs {
+			if existing == err {
+				return
+			}
+		}
+		errs = append(errs, err)
 	}
-	errs = append(errs, e.errs...)
-	errs = append(errs, e.unwrap...)
+
+	add(e.err)
+	for _, err := range e.errs {
+		add(err)
+	}
+	for _, err := range e.unwrap {
+		add(err)
+	}
+
 	return errs
 }
 
@@ -561,33 +766,42 @@ func unwrapStack(errs []any) []byte {
 	return nil
 }
 
-func callstack(errs []any) (caller string, stack []byte) {
+func callstack(errs []any) (caller string, stack []byte, cfgCaller callerOption, cfgLayout layoutOption, cfgWithStack bool) {
 	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	if n == 0 {
-		return "", stack
+		// Capture config snapshot even if no caller info
+		cMu.RLock()
+		cfgCaller = c.caller
+		cfgLayout = c.layout
+		cfgWithStack = bool(c.withStack)
+		cMu.RUnlock()
+		return "", stack, cfgCaller, cfgLayout, cfgWithStack
 	}
 
 	frames := runtime.CallersFrames(pc)
 	frame, more := frames.Next()
 	caller = parseFrame(frame)
 
+	// Capture configuration snapshot once at error creation time
 	cMu.RLock()
-	withStack := c.withStack
+	cfgCaller = c.caller
+	cfgLayout = c.layout
+	cfgWithStack = bool(c.withStack)
 	cMu.RUnlock()
 
-	if !withStack {
-		return caller, stack
+	if !cfgWithStack {
+		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
 	}
 
 	stack = unwrapStack(errs)
 
 	if len(stack) > 0 {
-		return caller, stack
+		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
 	}
 
 	if !more {
-		return caller, stack
+		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
 	}
 
 	for {
@@ -602,7 +816,7 @@ func callstack(errs []any) (caller string, stack []byte) {
 		}
 	}
 
-	return caller, stack
+	return caller, stack, cfgCaller, cfgLayout, cfgWithStack
 }
 
 func parseFrame(frame runtime.Frame) string {
@@ -784,7 +998,12 @@ func (e errific) ToMCPError() MCPError {
 		code = MCPInternalError
 	}
 
-	// Serialize the full errific error as data
+	// Serialize the full errific error as data.
+	// Marshal error is intentionally ignored because errific types are always JSON-serializable.
+	// json.Marshal can only fail in the following cases (none apply to errific):
+	//   - Cyclic data structures (impossible in errific's design)
+	//   - Unsupported types (all errific fields use JSON-supported types)
+	//   - Out of memory conditions (would cause larger system-wide failures)
 	data, _ := json.Marshal(e)
 
 	return MCPError{

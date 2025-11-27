@@ -49,7 +49,8 @@ func Configure(opts ...Option) {
 			return
 		}
 
-		c.trimPrefixes = append([]string{filepath.Dir(cwd) + "/"}, c.trimPrefixes...)
+		// Trim the current working directory itself, not its parent
+		c.trimPrefixes = append([]string{cwd + "/"}, c.trimPrefixes...)
 	}
 }
 
@@ -145,10 +146,20 @@ func init() {
 	_, file, _, _ := runtime.Caller(0)
 	root = fmt.Sprintf("%s/", filepath.Join(filepath.Dir(file), ".."))
 
-	// Get GOROOT using "go env GOROOT" as runtime.GOROOT is deprecated
+	// Try to get GOROOT using "go env GOROOT" first (preferred method)
 	if cmd := exec.Command("go", "env", "GOROOT"); cmd != nil {
 		if output, err := cmd.Output(); err == nil {
-			goroot = strings.TrimSpace(string(output))
+			trimmed := strings.TrimSpace(string(output))
+			if trimmed != "" {
+				goroot = trimmed
+				return
+			}
 		}
+	}
+
+	// Fallback to runtime.GOROOT() if command failed
+	// Note: runtime.GOROOT() is deprecated but still works as a fallback
+	if fallback := runtime.GOROOT(); fallback != "" {
+		goroot = fallback
 	}
 }

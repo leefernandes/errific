@@ -758,7 +758,7 @@ func TestWithHTTPStatus(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			var ErrTest Err = Err(tc.desc)
+			ErrTest := Err(tc.desc)
 			err := ErrTest.New().WithHTTPStatus(tc.status)
 			if GetHTTPStatus(err) != tc.status {
 				t.Errorf("expected status %d for %s", tc.status, tc.desc)
@@ -1581,7 +1581,7 @@ func TestPhase2A_WithLabelsNil(t *testing.T) {
 	labels := GetLabels(err)
 
 	// Should not panic, should return nil or empty map
-	if labels != nil && len(labels) != 0 {
+	if len(labels) != 0 {
 		t.Errorf("WithLabels(nil) should result in nil or empty map, got %v", labels)
 	}
 }
@@ -1594,7 +1594,7 @@ func TestPhase2A_EmptyTags(t *testing.T) {
 	tags := GetTags(err)
 
 	// Empty variadic should result in empty or nil slice
-	if tags != nil && len(tags) != 0 {
+	if len(tags) != 0 {
 		t.Errorf("WithTags() should result in nil or empty slice, got %v", tags)
 	}
 }
@@ -1753,7 +1753,9 @@ func TestPhase2A_JSONZeroValues(t *testing.T) {
 
 	jsonBytes, _ := json.Marshal(err)
 	var decoded map[string]interface{}
-	json.Unmarshal(jsonBytes, &decoded)
+	if err := json.Unmarshal(jsonBytes, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal JSON: %v", err)
+	}
 
 	// Verify omitempty works - Phase 2A fields should not appear
 	phase2AFields := []string{

@@ -32,6 +32,6 @@ func ExampleTrimCWD() {
 	fmt.Println(errors.Is(err, ErrExample))
 
 	// Output:
-	// example error [examples/example_trimprefixes_test.go:30.ExampleTrimCWD]
+	// example error [example_trimprefixes_test.go:30.ExampleTrimCWD]
 	// true
 }
