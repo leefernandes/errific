@@ -11,7 +11,7 @@ import (
 )
 
 func TestErrNew(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic error", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -62,7 +62,7 @@ func TestErrNew(t *testing.T) {
 }
 
 func TestErrErrorf(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("formatted error", func(t *testing.T) {
 		var ErrTest Err = "test error: %s %d"
@@ -92,7 +92,7 @@ func TestErrErrorf(t *testing.T) {
 }
 
 func TestErrWithf(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic withf", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -123,7 +123,7 @@ func TestErrWithf(t *testing.T) {
 }
 
 func TestErrWrapf(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic wrapf", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -154,7 +154,7 @@ func TestErrWrapf(t *testing.T) {
 }
 
 func TestErrificJoin(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	var ErrTest Err = "test error"
 	err := ErrTest.New().Join(io.EOF, io.ErrUnexpectedEOF)
@@ -170,7 +170,7 @@ func TestErrificJoin(t *testing.T) {
 
 func TestConfigureCallerOption(t *testing.T) {
 	t.Run("suffix", func(t *testing.T) {
-		Configure(Suffix)
+		Configure(OutputPretty, Suffix)
 
 		var ErrTest Err = "test"
 		err := ErrTest.New()
@@ -187,7 +187,7 @@ func TestConfigureCallerOption(t *testing.T) {
 	})
 
 	t.Run("prefix", func(t *testing.T) {
-		Configure(Prefix)
+		Configure(OutputPretty, Prefix)
 
 		var ErrTest Err = "test"
 		err := ErrTest.New()
@@ -200,7 +200,7 @@ func TestConfigureCallerOption(t *testing.T) {
 	})
 
 	t.Run("disabled", func(t *testing.T) {
-		Configure(Disabled)
+		Configure(OutputPretty, Disabled)
 
 		var ErrTest Err = "test"
 		err := ErrTest.New()
@@ -215,7 +215,7 @@ func TestConfigureCallerOption(t *testing.T) {
 
 func TestConfigureLayoutOption(t *testing.T) {
 	t.Run("newline", func(t *testing.T) {
-		Configure(Newline)
+		Configure(OutputPretty, Newline)
 
 		var ErrTest Err = "test"
 		err := ErrTest.New(io.EOF, io.ErrUnexpectedEOF)
@@ -228,7 +228,7 @@ func TestConfigureLayoutOption(t *testing.T) {
 	})
 
 	t.Run("inline", func(t *testing.T) {
-		Configure(Inline)
+		Configure(OutputPretty, Inline)
 
 		var ErrTest Err = "test"
 		err := ErrTest.New(io.EOF, io.ErrUnexpectedEOF)
@@ -269,7 +269,7 @@ func TestConfigureWithStack(t *testing.T) {
 	})
 
 	t.Run("without stack", func(t *testing.T) {
-		Configure() // Default is without stack
+		Configure(OutputPretty) // Default is without stack
 
 		var ErrTest Err = "test"
 		err := ErrTest.New()
@@ -287,7 +287,7 @@ func TestConfigureWithStack(t *testing.T) {
 }
 
 func TestWithStackContents(t *testing.T) {
-	Configure(WithStack)
+	Configure(OutputPretty, WithStack)
 
 	t.Run("stack contains expected file and function", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -453,7 +453,7 @@ func TestConcurrentConfigure(t *testing.T) {
 }
 
 func TestConcurrentErrorCreation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	var ErrTest Err = "test"
 	var wg sync.WaitGroup
@@ -476,7 +476,7 @@ func TestConcurrentErrorCreation(t *testing.T) {
 }
 
 func TestUnwrap(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	var (
 		Err1 Err = "error 1"
@@ -501,7 +501,7 @@ func TestUnwrap(t *testing.T) {
 }
 
 func TestCircularReferenceFixed(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	var ErrTest Err = "test"
 	err := ErrTest.Withf("detail %d", 1)
@@ -522,7 +522,7 @@ func TestCircularReferenceFixed(t *testing.T) {
 }
 
 func BenchmarkErrNew(b *testing.B) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	b.ResetTimer()
@@ -532,7 +532,7 @@ func BenchmarkErrNew(b *testing.B) {
 }
 
 func BenchmarkErrNewWithWrap(b *testing.B) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	b.ResetTimer()
@@ -542,7 +542,7 @@ func BenchmarkErrNewWithWrap(b *testing.B) {
 }
 
 func BenchmarkErrError(b *testing.B) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 	err := ErrTest.New(io.EOF)
 
@@ -567,7 +567,7 @@ func BenchmarkErrWithStack(b *testing.B) {
 // ============================================================================
 
 func TestWithContext(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic context", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -616,7 +616,7 @@ func TestWithContext(t *testing.T) {
 }
 
 func TestWithCode(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic code", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -638,7 +638,7 @@ func TestWithCode(t *testing.T) {
 }
 
 func TestWithCategory(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic category", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -672,7 +672,7 @@ func TestWithCategory(t *testing.T) {
 }
 
 func TestRetryMetadata(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("retryable", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -732,7 +732,7 @@ func TestRetryMetadata(t *testing.T) {
 }
 
 func TestWithHTTPStatus(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic http status", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -768,7 +768,7 @@ func TestWithHTTPStatus(t *testing.T) {
 }
 
 func TestJSONSerialization(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("basic json", func(t *testing.T) {
 		var ErrTest Err = "test error"
@@ -864,7 +864,7 @@ func TestJSONSerialization(t *testing.T) {
 }
 
 func TestAIAgentScenario(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("database timeout scenario", func(t *testing.T) {
 		// Simulate a database timeout error with full AI-agent metadata
@@ -950,7 +950,7 @@ func TestAIAgentScenario(t *testing.T) {
 // Phase 2A: MCP & RAG Integration Tests
 
 func TestPhase2A_CorrelationID(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("with correlation ID", func(t *testing.T) {
@@ -980,7 +980,7 @@ func TestPhase2A_CorrelationID(t *testing.T) {
 }
 
 func TestPhase2A_RequestID(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().WithRequestID("req-67890")
@@ -992,7 +992,7 @@ func TestPhase2A_RequestID(t *testing.T) {
 }
 
 func TestPhase2A_UserID(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().WithUserID("user-123")
@@ -1004,7 +1004,7 @@ func TestPhase2A_UserID(t *testing.T) {
 }
 
 func TestPhase2A_SessionID(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().WithSessionID("sess-456")
@@ -1016,7 +1016,7 @@ func TestPhase2A_SessionID(t *testing.T) {
 }
 
 func TestPhase2A_Help(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	helpText := "Check your configuration and try again"
@@ -1029,7 +1029,7 @@ func TestPhase2A_Help(t *testing.T) {
 }
 
 func TestPhase2A_Suggestion(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	suggestion := "Increase timeout to 30 seconds"
@@ -1042,7 +1042,7 @@ func TestPhase2A_Suggestion(t *testing.T) {
 }
 
 func TestPhase2A_Docs(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	docsURL := "https://docs.example.com/errors/timeout"
@@ -1055,7 +1055,7 @@ func TestPhase2A_Docs(t *testing.T) {
 }
 
 func TestPhase2A_Tags(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("with tags", func(t *testing.T) {
@@ -1085,7 +1085,7 @@ func TestPhase2A_Tags(t *testing.T) {
 }
 
 func TestPhase2A_Labels(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("with labels map", func(t *testing.T) {
@@ -1135,7 +1135,7 @@ func TestPhase2A_Labels(t *testing.T) {
 }
 
 func TestPhase2A_Timestamp(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	now := time.Now()
@@ -1148,7 +1148,7 @@ func TestPhase2A_Timestamp(t *testing.T) {
 }
 
 func TestPhase2A_Duration(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	duration := 5 * time.Second
@@ -1161,7 +1161,7 @@ func TestPhase2A_Duration(t *testing.T) {
 }
 
 func TestPhase2A_MCPCode(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("with MCP code", func(t *testing.T) {
@@ -1191,7 +1191,7 @@ func TestPhase2A_MCPCode(t *testing.T) {
 }
 
 func TestPhase2A_ToMCPError(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("with explicit MCP code", func(t *testing.T) {
@@ -1273,7 +1273,7 @@ func TestPhase2A_MCPErrorType(t *testing.T) {
 }
 
 func TestPhase2A_JSONSerialization(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("Phase 2A fields in JSON", func(t *testing.T) {
@@ -1351,7 +1351,7 @@ func TestPhase2A_JSONSerialization(t *testing.T) {
 }
 
 func TestPhase2A_MCPIntegration(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	t.Run("MCP tool error scenario", func(t *testing.T) {
 		var ErrToolExecution Err = "tool execution failed"
@@ -1466,7 +1466,7 @@ func TestMCPErrorCodeConstants(t *testing.T) {
 }
 
 func TestToMCPError_EdgeCases(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("nil error returns zero MCPError", func(t *testing.T) {
@@ -1537,7 +1537,7 @@ func TestMCPError_ErrorFormat(t *testing.T) {
 }
 
 func TestPhase2A_LabelMerging(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("WithLabels then WithLabel merges", func(t *testing.T) {
@@ -1574,7 +1574,7 @@ func TestPhase2A_LabelMerging(t *testing.T) {
 }
 
 func TestPhase2A_WithLabelsNil(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().WithLabels(nil)
@@ -1587,7 +1587,7 @@ func TestPhase2A_WithLabelsNil(t *testing.T) {
 }
 
 func TestPhase2A_EmptyTags(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().WithTags()
@@ -1645,7 +1645,7 @@ func TestPhase2A_HelpersWithStdlibErrors(t *testing.T) {
 }
 
 func TestPhase2A_TimestampEdgeCases(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("no timestamp returns zero time", func(t *testing.T) {
@@ -1679,7 +1679,7 @@ func TestPhase2A_TimestampEdgeCases(t *testing.T) {
 }
 
 func TestPhase2A_DurationEdgeCases(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("no duration returns zero", func(t *testing.T) {
@@ -1712,7 +1712,7 @@ func TestPhase2A_DurationEdgeCases(t *testing.T) {
 }
 
 func TestPhase2A_SpecialCharacters(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().
@@ -1745,7 +1745,7 @@ func TestPhase2A_SpecialCharacters(t *testing.T) {
 }
 
 func TestPhase2A_JSONZeroValues(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	// Create error with no Phase 2A fields set
@@ -1771,7 +1771,7 @@ func TestPhase2A_JSONZeroValues(t *testing.T) {
 }
 
 func TestPhase2A_ChainAllMethods(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	now := time.Now()
@@ -1832,7 +1832,7 @@ func TestPhase2A_ChainAllMethods(t *testing.T) {
 }
 
 func TestPhase2A_LabelKeyEdgeCases(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	err := ErrTest.New().
@@ -1862,7 +1862,7 @@ func TestPhase2A_LabelKeyEdgeCases(t *testing.T) {
 }
 
 func BenchmarkWithContext(b *testing.B) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test"
 	ctx := Context{"key": "value"}
 
@@ -1873,7 +1873,7 @@ func BenchmarkWithContext(b *testing.B) {
 }
 
 func BenchmarkJSONMarshal(b *testing.B) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test"
 	err := ErrTest.New().
 		WithCode("ERR_001").

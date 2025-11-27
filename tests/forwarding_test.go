@@ -10,7 +10,7 @@ import (
 
 // TestForwardingMethods tests that With___ methods can be called directly on Err
 func TestForwardingMethods(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("WithCode without explicit New", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestForwardingMethods(t *testing.T) {
 
 // TestForwardingMethodChaining tests that chaining works efficiently
 func TestForwardingMethodChaining(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("chained calls work", func(t *testing.T) {
@@ -223,7 +223,7 @@ func TestForwardingMethodChaining(t *testing.T) {
 
 // TestForwardingBackwardsCompatibility tests that old style still works
 func TestForwardingBackwardsCompatibility(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("explicit New still works", func(t *testing.T) {
@@ -263,7 +263,7 @@ func TestForwardingBackwardsCompatibility(t *testing.T) {
 
 // TestForwardingNewCalledOnce tests that New() is only called once
 func TestForwardingNewCalledOnce(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("caller info shows forwarding method", func(t *testing.T) {
@@ -322,7 +322,7 @@ func TestForwardingNewCalledOnce(t *testing.T) {
 
 // TestForwardingWithWrappedErrors tests forwarding with wrapped errors
 func TestForwardingWithWrappedErrors(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 	var ErrOther Err = "other error"
 
@@ -345,7 +345,7 @@ func TestForwardingWithWrappedErrors(t *testing.T) {
 
 // TestForwardingValidationStillWorks tests that validation still applies
 func TestForwardingValidationStillWorks(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("invalid MCP code panics with forwarding", func(t *testing.T) {

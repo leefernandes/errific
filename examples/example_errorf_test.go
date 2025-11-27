@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleErrorf() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// format an error with parameters.
 	var ErrExample Err = "formatted error: %s %w"
 	err := ErrExample.Errorf("io error", io.EOF)

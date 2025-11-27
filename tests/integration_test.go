@@ -14,7 +14,7 @@ import (
 
 // TestIntegration_WebAPIWithFullErrorHandling tests a complete web API scenario
 func TestIntegration_WebAPIWithFullErrorHandling(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	
 	var (
 		ErrInvalidInput = Err("invalid input")
@@ -149,7 +149,7 @@ func TestIntegration_WebAPIWithFullErrorHandling(t *testing.T) {
 
 // TestIntegration_MCPToolServer tests MCP tool server scenario
 func TestIntegration_MCPToolServer(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	
 	var ErrToolExecution = Err("tool execution failed")
 	
@@ -262,7 +262,7 @@ func TestIntegration_MCPToolServer(t *testing.T) {
 
 // TestIntegration_DistributedTracing tests distributed tracing scenario
 func TestIntegration_DistributedTracing(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	
 	var (
 		ErrServiceA = Err("service A failed")
@@ -366,7 +366,7 @@ func containsAny(s string, substrs ...string) bool {
 
 // TestIntegration_AIAgentWithSelfHealing tests AI agent self-healing scenario
 func TestIntegration_AIAgentWithSelfHealing(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	
 	var ErrAPICall = Err("API call failed")
 	
@@ -426,7 +426,7 @@ func TestIntegration_AIAgentWithSelfHealing(t *testing.T) {
 
 // TestIntegration_RAGErrorCategorization tests RAG system error categorization
 func TestIntegration_RAGErrorCategorization(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	
 	var ErrEmbedding = Err("embedding generation failed")
 	

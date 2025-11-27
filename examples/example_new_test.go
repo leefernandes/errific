@@ -9,7 +9,7 @@ import (
 )
 
 func ExampleNew() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// w/out wrapping errors.
 	var ErrExample Err = "example error"
 	err := ErrExample.New()
@@ -22,7 +22,7 @@ func ExampleNew() {
 }
 
 func Example_newWrapError() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// wrap an error.
 	var ErrExample Err = "example error"
 	err := ErrExample.New(io.EOF)
@@ -38,7 +38,7 @@ func Example_newWrapError() {
 }
 
 func Example_newWrapErrors() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// wrap multiple errors.
 	var ErrExample Err = "example error"
 	err := ErrExample.New(io.ErrUnexpectedEOF, io.EOF)
@@ -57,7 +57,7 @@ func Example_newWrapErrors() {
 }
 
 func Example_newNest() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// wrapped errific error chain.
 	var (
 		Err1 Err = "error 1"

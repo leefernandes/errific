@@ -16,7 +16,7 @@ var (
 // Example_mcpToolError demonstrates MCP tool error handling with correlation tracking,
 // recovery suggestions, and semantic tags for RAG systems.
 func Example_mcpToolError() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty, errific.VerbosityMinimal)
 
 	// MCP tool error with full metadata for AI agents
 	err := ErrMCPToolExecution.New().
@@ -45,7 +45,7 @@ func Example_mcpToolError() {
 // Example_mcpErrorFormat demonstrates converting an errific error to MCP JSON-RPC 2.0 format
 // for use in MCP server error responses.
 func Example_mcpErrorFormat() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	err := ErrMCPToolExecution.New().
 		WithMCPCode(errific.MCPInvalidParams).
@@ -66,7 +66,7 @@ func Example_mcpErrorFormat() {
 // Example_correlationTracking demonstrates using correlation IDs to track errors
 // across distributed MCP tool calls.
 func Example_correlationTracking() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	correlationID := "trace-12345"
 
@@ -101,7 +101,7 @@ func Example_correlationTracking() {
 // Example_recoverySuggestions demonstrates providing recovery guidance for AI agents
 // to automatically resolve errors.
 func Example_recoverySuggestions() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrDatabaseTimeout errific.Err = "database query timeout"
 
@@ -128,7 +128,7 @@ func Example_recoverySuggestions() {
 // Example_semanticTags demonstrates using semantic tags for RAG systems
 // to categorize and search errors.
 func Example_semanticTags() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrNetworkTimeout errific.Err = "network timeout"
 
@@ -149,7 +149,7 @@ func Example_semanticTags() {
 // Example_labelsForFiltering demonstrates using key-value labels
 // to filter and group errors for monitoring and alerting.
 func Example_labelsForFiltering() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrServiceDegraded errific.Err = "service degraded"
 
@@ -174,7 +174,7 @@ func Example_labelsForFiltering() {
 // Example_timestampAndDuration demonstrates tracking when an error occurred
 // and how long the operation took before failing.
 func Example_timestampAndDuration() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrSlowQuery errific.Err = "slow database query"
 
@@ -200,7 +200,7 @@ func Example_timestampAndDuration() {
 // Example_phase2aJSONSerialization demonstrates JSON serialization of all Phase 2A fields
 // for structured logging and monitoring systems.
 func Example_phase2aJSONSerialization() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrCompleteExample errific.Err = "complete Phase 2A example"
 
@@ -232,7 +232,7 @@ func Example_phase2aJSONSerialization() {
 // Example_mcpInvalidParams demonstrates handling MCP invalid parameter errors
 // with detailed validation context.
 func Example_mcpInvalidParams() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrInvalidToolParams errific.Err = "invalid tool parameters"
 
@@ -262,7 +262,7 @@ func Example_mcpInvalidParams() {
 // Example_aiAgentWorkflow demonstrates a complete AI agent error handling workflow
 // using Phase 2A features for automated decision-making.
 func Example_aiAgentWorkflow() {
-	errific.Configure()
+	errific.Configure(errific.OutputPretty)
 
 	var ErrToolFailed errific.Err = "tool execution failed"
 

@@ -9,7 +9,7 @@ import (
 )
 
 func Example_withf() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	var ErrExample Err = "example error"
 	err := ErrExample.Withf("int (%d) string (%s): %w", 123, "yarn", io.EOF)
 	fmt.Println(err)
@@ -23,7 +23,7 @@ func Example_withf() {
 }
 
 func Example_withfNest() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	var (
 		Err1 Err = "error 1"
 		Err2 Err = "error 2"
@@ -46,7 +46,7 @@ func Example_withfNest() {
 }
 
 func Example_withfChain() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	var ErrExample Err = "example error"
 
 	err := ErrExample.

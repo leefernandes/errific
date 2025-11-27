@@ -13,7 +13,7 @@ func ExampleTrimPrefixes() {
 	if err != nil {
 		panic(err)
 	}
-	Configure(TrimPrefixes(wd + "/"))
+	Configure(OutputPretty, TrimPrefixes(wd + "/"))
 	var ErrExample Err = "example error"
 	err = ErrExample.New()
 	fmt.Println(err)
@@ -25,7 +25,7 @@ func ExampleTrimPrefixes() {
 }
 
 func ExampleTrimCWD() {
-	Configure(TrimCWD)
+	Configure(OutputPretty, TrimCWD)
 	var ErrExample Err = "example error"
 	err := ErrExample.New()
 	fmt.Println(err)
