@@ -16,7 +16,7 @@ import (
 // ============================================================================
 
 func TestToMCPError_WithNilError(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	mcpErr := ToMCPError(nil)
 	// ToMCPError returns zero MCPError for nil
@@ -29,7 +29,7 @@ func TestToMCPError_WithNilError(t *testing.T) {
 }
 
 func TestToMCPError_WithStandardError(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 
 	stdErr := errors.New("standard error")
 	mcpErr := ToMCPError(stdErr)
@@ -43,7 +43,7 @@ func TestToMCPError_WithStandardError(t *testing.T) {
 }
 
 func TestMCPError_AllCodes(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	codes := []int{
@@ -77,7 +77,7 @@ func TestMCPError_AllCodes(t *testing.T) {
 }
 
 func TestMCPCode_Validation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("valid MCP codes accepted", func(t *testing.T) {
@@ -161,7 +161,7 @@ func TestMCPCode_Validation(t *testing.T) {
 // ============================================================================
 
 func TestMarshalJSON_WithAllFields(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "complete error"
 
 	err := ErrTest.New().
@@ -211,7 +211,7 @@ func TestMarshalJSON_WithAllFields(t *testing.T) {
 }
 
 func TestMarshalJSON_WithSpecialCharacters(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	// Test with special characters that need escaping

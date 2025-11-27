@@ -56,15 +56,13 @@ func (e Err) New(errs ...error) errific {
 		a[i] = errs[i]
 	}
 
-	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
+	caller, stack, cfg := callstack(a)
 	return errific{
-		err:          e,
-		errs:         errs,
-		caller:       caller,
-		stack:        stack,
-		cfgCaller:    cfgCaller,
-		cfgLayout:    cfgLayout,
-		cfgWithStack: cfgWithStack,
+		err:    e,
+		errs:   errs,
+		caller: caller,
+		stack:  stack,
+		cfg:    cfg,
 	}
 }
 
@@ -75,15 +73,13 @@ func (e Err) New(errs ...error) errific {
 //
 //	return ErrProcessThing.Errorf("abc")
 func (e Err) Errorf(a ...any) errific {
-	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
+	caller, stack, cfg := callstack(a)
 	return errific{
-		err:          fmt.Errorf(e.Error(), a...),
-		caller:       caller,
-		unwrap:       []error{e},
-		stack:        stack,
-		cfgCaller:    cfgCaller,
-		cfgLayout:    cfgLayout,
-		cfgWithStack: cfgWithStack,
+		err:    fmt.Errorf(e.Error(), a...),
+		caller: caller,
+		unwrap: []error{e},
+		stack:  stack,
+		cfg:    cfg,
 	}
 }
 
@@ -93,16 +89,14 @@ func (e Err) Errorf(a ...any) errific {
 //
 //	return ErrProcessThing.Withf("id: '%s'", "abc")
 func (e Err) Withf(format string, a ...any) errific {
-	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
+	caller, stack, cfg := callstack(a)
 	format = e.Error() + ": " + format
 	return errific{
-		err:          fmt.Errorf(format, a...),
-		caller:       caller,
-		unwrap:       []error{e},
-		stack:        stack,
-		cfgCaller:    cfgCaller,
-		cfgLayout:    cfgLayout,
-		cfgWithStack: cfgWithStack,
+		err:    fmt.Errorf(format, a...),
+		caller: caller,
+		unwrap: []error{e},
+		stack:  stack,
+		cfg:    cfg,
 	}
 }
 
@@ -113,15 +107,13 @@ func (e Err) Withf(format string, a ...any) errific {
 //
 //	return ErrProcessThing.Wrapf("cause: %w", err)
 func (e Err) Wrapf(format string, a ...any) errific {
-	caller, stack, cfgCaller, cfgLayout, cfgWithStack := callstack(a)
+	caller, stack, cfg := callstack(a)
 	return errific{
-		err:          e,
-		errs:         []error{fmt.Errorf(format, a...)},
-		caller:       caller,
-		stack:        stack,
-		cfgCaller:    cfgCaller,
-		cfgLayout:    cfgLayout,
-		cfgWithStack: cfgWithStack,
+		err:    e,
+		errs:   []error{fmt.Errorf(format, a...)},
+		caller: caller,
+		stack:  stack,
+		cfg:    cfg,
 	}
 }
 
@@ -283,6 +275,25 @@ func (m MCPError) Error() string {
 	return fmt.Sprintf("MCP error %d: %s", m.Code, m.Message)
 }
 
+// configSnapshot captures configuration at error creation time.
+// This prevents race conditions and ensures consistent formatting.
+type configSnapshot struct {
+	caller         callerOption
+	layout         layoutOption
+	withStack      bool
+	outputFormat   outputFormatOption
+	verbosity      verbosityOption
+	showCode       bool
+	showCategory   bool
+	showContext    bool
+	showHTTPStatus bool
+	showRetryMeta  bool
+	showMCPData    bool
+	showTags       bool
+	showLabels     bool
+	showTimestamps bool
+}
+
 type errific struct {
 	err        error         // primary error.
 	errs       []error       // errors used in string output, and satisfy errors.Is.
@@ -310,39 +321,47 @@ type errific struct {
 	timestamp     time.Time         // when the error occurred.
 	duration      time.Duration     // operation duration before error.
 	// Configuration snapshot at error creation time
-	cfgCaller    callerOption // caller config when error was created.
-	cfgLayout    layoutOption // layout config when error was created.
-	cfgWithStack bool         // withStack config when error was created.
+	cfg configSnapshot
 }
 
-func (e errific) Error() (msg string) {
+func (e errific) Error() string {
 	// Use configuration snapshot from error creation time
 	// This prevents race conditions and ensures consistent formatting
-	caller := e.cfgCaller
-	layout := e.cfgLayout
-	withStack := e.cfgWithStack
+	switch e.cfg.outputFormat {
+	case OutputJSON:
+		return e.formatJSON()
+	case OutputJSONPretty:
+		return e.formatJSONPretty()
+	case OutputCompact:
+		return e.formatCompact()
+	default: // OutputPretty
+		return e.formatPretty()
+	}
+}
 
-	switch caller {
+// formatPretty formats the error as human-readable multi-line text.
+func (e errific) formatPretty() string {
+	var msg string
+
+	// Build the base message with caller
+	switch e.cfg.caller {
 	case Disabled:
-		// Include error message without caller information
 		msg = e.err.Error()
-
 	case Prefix:
 		msg = fmt.Sprintf("[%s] %s", e.caller, e.err.Error())
-
-	default:
+	default: // Suffix
 		msg = fmt.Sprintf("%s [%s]", e.err.Error(), e.caller)
 	}
 
-	switch layout {
+	// Add wrapped errors
+	switch e.cfg.layout {
 	case Inline:
 		for i := range e.errs {
 			if e.errs[i] != nil {
 				msg = fmt.Sprintf("%s ↩ %s", msg, e.errs[i].Error())
 			}
 		}
-
-	default:
+	default: // Newline
 		for i := range e.errs {
 			if e.errs[i] != nil {
 				msg = fmt.Sprintf("%s\n%s", msg, e.errs[i].Error())
@@ -350,15 +369,186 @@ func (e errific) Error() (msg string) {
 		}
 	}
 
-	if withStack && len(e.stack) > 0 {
-		// Append stack trace at the end
-		// Note: If wrapping another errific error with a stack, both stacks may appear.
-		// This is intentional - each error in the chain shows its creation point.
-		// To avoid duplicate stacks, the stack from wrapped errors is reused when possible.
+	// Add metadata fields based on verbosity
+	var fields []string
+
+	if e.cfg.showCode && e.code != "" {
+		fields = append(fields, fmt.Sprintf("  code: %s", e.code))
+	}
+
+	if e.cfg.showCategory && e.category != "" {
+		fields = append(fields, fmt.Sprintf("  category: %s", e.category))
+	}
+
+	if e.cfg.showContext && len(e.context) > 0 {
+		fields = append(fields, fmt.Sprintf("  context: %v", e.context))
+	}
+
+	if e.cfg.showHTTPStatus && e.httpStatus != 0 {
+		fields = append(fields, fmt.Sprintf("  http_status: %d", e.httpStatus))
+	}
+
+	if e.cfg.showRetryMeta {
+		if e.retryable {
+			fields = append(fields, "  retryable: true")
+		}
+		if e.retryAfter > 0 {
+			fields = append(fields, fmt.Sprintf("  retry_after: %s", e.retryAfter))
+		}
+		if e.maxRetries > 0 {
+			fields = append(fields, fmt.Sprintf("  max_retries: %d", e.maxRetries))
+		}
+	}
+
+	if e.cfg.showMCPData {
+		if e.mcpCode != 0 {
+			fields = append(fields, fmt.Sprintf("  mcp_code: %d", e.mcpCode))
+		}
+		if e.correlationID != "" {
+			fields = append(fields, fmt.Sprintf("  correlation_id: %s", e.correlationID))
+		}
+		if e.requestID != "" {
+			fields = append(fields, fmt.Sprintf("  request_id: %s", e.requestID))
+		}
+		if e.userID != "" {
+			fields = append(fields, fmt.Sprintf("  user_id: %s", e.userID))
+		}
+		if e.sessionID != "" {
+			fields = append(fields, fmt.Sprintf("  session_id: %s", e.sessionID))
+		}
+		if e.help != "" {
+			fields = append(fields, fmt.Sprintf("  help: %s", e.help))
+		}
+		if e.suggestion != "" {
+			fields = append(fields, fmt.Sprintf("  suggestion: %s", e.suggestion))
+		}
+		if e.docsURL != "" {
+			fields = append(fields, fmt.Sprintf("  docs: %s", e.docsURL))
+		}
+	}
+
+	if e.cfg.showTags && len(e.tags) > 0 {
+		fields = append(fields, fmt.Sprintf("  tags: %v", e.tags))
+	}
+
+	if e.cfg.showLabels && len(e.labels) > 0 {
+		fields = append(fields, fmt.Sprintf("  labels: %v", e.labels))
+	}
+
+	if e.cfg.showTimestamps {
+		if !e.timestamp.IsZero() {
+			fields = append(fields, fmt.Sprintf("  timestamp: %s", e.timestamp.Format(time.RFC3339)))
+		}
+		if e.duration > 0 {
+			fields = append(fields, fmt.Sprintf("  duration: %s", e.duration))
+		}
+	}
+
+	// Append all fields
+	if len(fields) > 0 {
+		msg += "\n" + strings.Join(fields, "\n")
+	}
+
+	// Add stack trace if configured
+	if e.cfg.withStack && len(e.stack) > 0 {
 		msg += string(e.stack)
 	}
 
 	return msg
+}
+
+// formatJSON formats the error as compact JSON.
+func (e errific) formatJSON() string {
+	data, err := json.Marshal(e)
+	if err != nil {
+		// Fallback to simple error message if marshaling fails
+		return fmt.Sprintf(`{"error":"%s"}`, e.err.Error())
+	}
+	return string(data)
+}
+
+// formatJSONPretty formats the error as indented JSON.
+func (e errific) formatJSONPretty() string {
+	data, err := json.MarshalIndent(e, "", "  ")
+	if err != nil {
+		// Fallback to simple error message if marshaling fails
+		return fmt.Sprintf(`{\n  "error": "%s"\n}`, e.err.Error())
+	}
+	return string(data)
+}
+
+// formatCompact formats the error as single-line text with key=value pairs.
+func (e errific) formatCompact() string {
+	var parts []string
+
+	// Base message with caller
+	switch e.cfg.caller {
+	case Disabled:
+		parts = append(parts, e.err.Error())
+	case Prefix:
+		parts = append(parts, fmt.Sprintf("[%s] %s", e.caller, e.err.Error()))
+	default: // Suffix
+		parts = append(parts, fmt.Sprintf("%s [%s]", e.err.Error(), e.caller))
+	}
+
+	// Add wrapped errors inline
+	for i := range e.errs {
+		if e.errs[i] != nil {
+			parts = append(parts, "↩", e.errs[i].Error())
+		}
+	}
+
+	// Add metadata as key=value pairs
+	if e.cfg.showCode && e.code != "" {
+		parts = append(parts, fmt.Sprintf("code=%s", e.code))
+	}
+
+	if e.cfg.showCategory && e.category != "" {
+		parts = append(parts, fmt.Sprintf("category=%s", e.category))
+	}
+
+	if e.cfg.showContext && len(e.context) > 0 {
+		for k, v := range e.context {
+			parts = append(parts, fmt.Sprintf("%s=%v", k, v))
+		}
+	}
+
+	if e.cfg.showHTTPStatus && e.httpStatus != 0 {
+		parts = append(parts, fmt.Sprintf("http_status=%d", e.httpStatus))
+	}
+
+	if e.cfg.showRetryMeta {
+		if e.retryable {
+			parts = append(parts, "retryable=true")
+		}
+		if e.retryAfter > 0 {
+			parts = append(parts, fmt.Sprintf("retry_after=%s", e.retryAfter))
+		}
+		if e.maxRetries > 0 {
+			parts = append(parts, fmt.Sprintf("max_retries=%d", e.maxRetries))
+		}
+	}
+
+	if e.cfg.showMCPData {
+		if e.correlationID != "" {
+			parts = append(parts, fmt.Sprintf("correlation_id=%s", e.correlationID))
+		}
+		if e.requestID != "" {
+			parts = append(parts, fmt.Sprintf("request_id=%s", e.requestID))
+		}
+	}
+
+	if e.cfg.showTags && len(e.tags) > 0 {
+		parts = append(parts, fmt.Sprintf("tags=%v", e.tags))
+	}
+
+	if e.cfg.showLabels && len(e.labels) > 0 {
+		for k, v := range e.labels {
+			parts = append(parts, fmt.Sprintf("label_%s=%s", k, v))
+		}
+	}
+
+	return strings.Join(parts, " ")
 }
 
 func (e errific) Join(errs ...error) error {
@@ -766,17 +956,36 @@ func unwrapStack(errs []any) []byte {
 	return nil
 }
 
-func callstack(errs []any) (caller string, stack []byte, cfgCaller callerOption, cfgLayout layoutOption, cfgWithStack bool) {
+// captureConfig captures the current configuration as a snapshot.
+// This must be called with cMu held (either RLock or Lock).
+func captureConfig() configSnapshot {
+	return configSnapshot{
+		caller:         c.caller,
+		layout:         c.layout,
+		withStack:      bool(c.withStack),
+		outputFormat:   c.outputFormat,
+		verbosity:      c.verbosity,
+		showCode:       c.showCode,
+		showCategory:   c.showCategory,
+		showContext:    c.showContext,
+		showHTTPStatus: c.showHTTPStatus,
+		showRetryMeta:  c.showRetryMetadata,
+		showMCPData:    c.showMCPData,
+		showTags:       c.showTags,
+		showLabels:     c.showLabels,
+		showTimestamps: c.showTimestamps,
+	}
+}
+
+func callstack(errs []any) (caller string, stack []byte, cfg configSnapshot) {
 	pc := make([]uintptr, 32)
 	n := runtime.Callers(3, pc)
 	if n == 0 {
 		// Capture config snapshot even if no caller info
 		cMu.RLock()
-		cfgCaller = c.caller
-		cfgLayout = c.layout
-		cfgWithStack = bool(c.withStack)
+		cfg = captureConfig()
 		cMu.RUnlock()
-		return "", stack, cfgCaller, cfgLayout, cfgWithStack
+		return "", stack, cfg
 	}
 
 	frames := runtime.CallersFrames(pc)
@@ -785,23 +994,21 @@ func callstack(errs []any) (caller string, stack []byte, cfgCaller callerOption,
 
 	// Capture configuration snapshot once at error creation time
 	cMu.RLock()
-	cfgCaller = c.caller
-	cfgLayout = c.layout
-	cfgWithStack = bool(c.withStack)
+	cfg = captureConfig()
 	cMu.RUnlock()
 
-	if !cfgWithStack {
-		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
+	if !cfg.withStack {
+		return caller, stack, cfg
 	}
 
 	stack = unwrapStack(errs)
 
 	if len(stack) > 0 {
-		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
+		return caller, stack, cfg
 	}
 
 	if !more {
-		return caller, stack, cfgCaller, cfgLayout, cfgWithStack
+		return caller, stack, cfg
 	}
 
 	for {
@@ -816,7 +1023,7 @@ func callstack(errs []any) (caller string, stack []byte, cfgCaller callerOption,
 		}
 	}
 
-	return caller, stack, cfgCaller, cfgLayout, cfgWithStack
+	return caller, stack, cfg
 }
 
 func parseFrame(frame runtime.Frame) string {

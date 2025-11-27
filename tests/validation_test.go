@@ -14,7 +14,7 @@ import (
 // ============================================================================
 
 func TestHTTPStatus_Validation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("valid HTTP status codes accepted", func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestHTTPStatus_Validation(t *testing.T) {
 // ============================================================================
 
 func TestMaxRetries_Validation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("non-negative values accepted", func(t *testing.T) {
@@ -148,7 +148,7 @@ func TestMaxRetries_Validation(t *testing.T) {
 }
 
 func TestRetryAfter_Validation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("non-negative durations accepted", func(t *testing.T) {
@@ -200,7 +200,7 @@ func TestRetryAfter_Validation(t *testing.T) {
 // ============================================================================
 
 func TestEmptyString_Validation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("empty code ignored", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestEmptyString_Validation(t *testing.T) {
 // ============================================================================
 
 func TestChainedMethods_LastWins(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("multiple WithMCPCode calls - last wins", func(t *testing.T) {
@@ -341,7 +341,7 @@ func TestChainedMethods_LastWins(t *testing.T) {
 // ============================================================================
 
 func TestBoundaryValues_Extremes(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test error"
 
 	t.Run("MCP code boundaries", func(t *testing.T) {

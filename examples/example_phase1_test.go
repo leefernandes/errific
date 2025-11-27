@@ -11,7 +11,7 @@ import (
 )
 
 func ExampleContext() {
-	Configure()
+	Configure(OutputPretty, VerbosityMinimal)
 	// Add structured context to errors for better debugging
 	var ErrDatabaseQuery Err = "database query failed"
 	err := ErrDatabaseQuery.New(io.EOF).WithContext(Context{
@@ -34,7 +34,7 @@ func ExampleContext() {
 }
 
 func Example_errorCode() {
-	Configure()
+	Configure(OutputPretty)
 	// Use error codes for machine-readable identification
 	var ErrAPITimeout Err = "API request timeout"
 	err := ErrAPITimeout.New().
@@ -55,7 +55,7 @@ func Example_errorCode() {
 }
 
 func Example_retryable() {
-	Configure()
+	Configure(OutputPretty)
 	// Mark errors as retryable with suggested retry strategy
 	var ErrRateLimit Err = "rate limit exceeded"
 	err := ErrRateLimit.New().
@@ -79,7 +79,7 @@ func Example_retryable() {
 }
 
 func Example_httpStatus() {
-	Configure()
+	Configure(OutputPretty)
 	// Set HTTP status codes for automatic response handling
 	var ErrValidation Err = "validation failed"
 	err := ErrValidation.New().
@@ -97,7 +97,7 @@ func Example_httpStatus() {
 }
 
 func Example_json() {
-	Configure()
+	Configure(OutputPretty)
 	// Serialize errors to JSON for logging and APIs
 	var ErrDatabase Err = "database connection failed"
 	err := ErrDatabase.New(io.EOF).
@@ -133,7 +133,7 @@ func Example_json() {
 }
 
 func Example_aiAgentScenario() {
-	Configure()
+	Configure(OutputPretty)
 	// Complete example for AI agent automated error handling
 	var ErrServiceCall Err = "external service call failed"
 	err := ErrServiceCall.New().
@@ -170,7 +170,7 @@ func Example_aiAgentScenario() {
 }
 
 func Example_chainedMethods() {
-	Configure()
+	Configure(OutputPretty)
 	// Chain all Phase 1 methods together
 	var ErrProcessing Err = "processing failed"
 	err := ErrProcessing.New(io.EOF).

@@ -14,7 +14,7 @@ import (
 // ============================================================================
 
 func TestConcurrent_Getters(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "concurrent test"
 
 	err := ErrTest.New().
@@ -55,16 +55,16 @@ func TestConcurrent_ConfigureAndCreate(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			if idx%2 == 0 {
-				Configure(Suffix, Newline)
+				Configure(OutputPretty, Suffix, Newline)
 			} else {
-				Configure(Prefix, Inline)
+				Configure(OutputPretty, Prefix, Inline)
 			}
 			_ = ErrTest.New()
 		}(i)
 	}
 	wg.Wait()
 
-	Configure() // Reset
+	Configure(OutputPretty) // Reset
 }
 
 // ============================================================================
@@ -76,11 +76,11 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 
 	t.Run("error formatting consistent after Configure", func(t *testing.T) {
 		// Create error with Suffix config
-		Configure(Suffix)
+		Configure(OutputPretty, Suffix)
 		err := ErrTest.New()
 
 		// Change configuration
-		Configure(Prefix)
+		Configure(OutputPretty, Prefix)
 
 		// Error should still use Suffix (snapshot at creation time)
 		msg := err.Error()
@@ -94,7 +94,7 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 
 	t.Run("concurrent Configure and Error calls", func(t *testing.T) {
 		// This test should pass race detector
-		Configure(Suffix, Newline)
+		Configure(OutputPretty, Suffix, Newline)
 
 		var wg sync.WaitGroup
 		errors := make([]error, 100)
@@ -114,9 +114,9 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 			go func(n int) {
 				defer wg.Done()
 				if n%2 == 0 {
-					Configure(Prefix, Inline)
+					Configure(OutputPretty, Prefix, Inline)
 				} else {
-					Configure(Suffix, Newline)
+					Configure(OutputPretty, Suffix, Newline)
 				}
 			}(i)
 		}
@@ -137,15 +137,15 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 
 	t.Run("stack config snapshot works", func(t *testing.T) {
 		// Create error without stack
-		Configure()
+		Configure(OutputPretty)
 		err1 := ErrTest.New()
 
 		// Enable stack
-		Configure(WithStack)
+		Configure(OutputPretty, WithStack)
 		err2 := ErrTest.New()
 
 		// Disable stack again
-		Configure()
+		Configure(OutputPretty)
 		err3 := ErrTest.New()
 
 		// Each error should use its creation-time config
@@ -171,11 +171,11 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 
 	t.Run("layout config snapshot works", func(t *testing.T) {
 		// Create error with Newline layout
-		Configure(Newline)
+		Configure(OutputPretty, Newline)
 		err1 := ErrTest.New(errors.New("wrapped1"), errors.New("wrapped2"))
 
 		// Change to Inline
-		Configure(Inline)
+		Configure(OutputPretty, Inline)
 		err2 := ErrTest.New(errors.New("wrapped1"), errors.New("wrapped2"))
 
 		// err1 should use newlines
@@ -200,7 +200,7 @@ func TestRaceCondition_ConfigurationSnapshot(t *testing.T) {
 // ============================================================================
 
 func TestImmutability_NoMutation(t *testing.T) {
-	Configure()
+	Configure(OutputPretty)
 	var ErrTest Err = "test"
 
 	err1 := ErrTest.New().WithCode("CODE1")
@@ -217,15 +217,15 @@ func TestImmutability_NoMutation(t *testing.T) {
 
 func TestImmutability_MultipleConfigureCalls(t *testing.T) {
 	// Test that errors capture config at creation time
-	Configure(Suffix, Newline)
+	Configure(OutputPretty, Suffix, Newline)
 	var ErrTest Err = "test"
 
 	err1 := ErrTest.New()
 
-	Configure(Prefix, Inline)
+	Configure(OutputPretty, Prefix, Inline)
 	err2 := ErrTest.New()
 
-	Configure(Disabled)
+	Configure(OutputPretty, Disabled)
 	err3 := ErrTest.New()
 
 	// Each error should use its creation-time config

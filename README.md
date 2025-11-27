@@ -19,6 +19,9 @@ import (
 var ErrUserNotFound errific.Err = "user not found"
 
 func main() {
+	// Configure pretty JSON output for readability
+	errific.Configure(errific.OutputJSONPretty)
+
 	// Return an error with context
 	err := GetUser("user-123")
 	fmt.Println(err)
@@ -36,15 +39,23 @@ func GetUser(userID string) error {
 ```
 
 **Output:**
-```
-user not found [main.go:20.GetUser]
+```json
+{
+  "error": "user not found",
+  "code": "USER_404",
+  "caller": "main.go:27.GetUser",
+  "context": {
+    "source": "database",
+    "user_id": "user-123"
+  }
+}
 ```
 
 The error includes:
 - ✅ Automatic caller information (`main.go:20.GetUser`)
-- ✅ Error code (`USER_404`)
-- ✅ Structured context (user_id, source)
-- ✅ JSON serializable for logging
+- ✅ Error code (`USER_404`) visible in output
+- ✅ Structured context (user_id, source) visible in output
+- ✅ JSON output by default for structured logging
 
 ## ✨ Features
 
@@ -132,6 +143,78 @@ if errific.IsRetryable(err) {
 jsonBytes, _ := json.Marshal(err)
 log.Info(string(jsonBytes))
 ```
+
+### 🎨 Output Formats & Verbosity
+
+Errific supports multiple output formats and verbosity levels. **By default, errors output as JSON with all metadata visible**.
+
+```go
+// Default: JSON format with full verbosity (shows all metadata)
+errific.Configure() // or Configure(OutputJSON, VerbosityFull)
+
+err := ErrUserNotFound.
+    WithCode("USER_404").
+    WithContext(errific.Context{"user_id": "user-123"})
+
+fmt.Println(err)
+// Output: {"error":"user not found","code":"USER_404","caller":"main.go:20","context":{"user_id":"user-123"}}
+
+// JSON Pretty format (indented JSON for docs/debugging)
+errific.Configure(OutputJSONPretty)
+fmt.Println(err)
+// Output:
+// {
+//   "error": "user not found",
+//   "code": "USER_404",
+//   "caller": "main.go:20",
+//   "context": {
+//     "user_id": "user-123"
+//   }
+// }
+
+// Pretty format (multi-line, human-readable text)
+errific.Configure(OutputPretty)
+fmt.Println(err)
+// Output:
+//   user not found [main.go:20.GetUser]
+//     code: USER_404
+//     context: map[user_id:user-123]
+
+// Compact format (single-line key=value)
+errific.Configure(OutputCompact)
+fmt.Println(err)
+// Output: user not found [main.go:20] code=USER_404 user_id=user-123
+
+// Minimal verbosity (only message + caller, useful for simple logging)
+errific.Configure(VerbosityMinimal)
+fmt.Println(err)
+// Output (JSON): {"error":"user not found","caller":"main.go:20"}
+
+// Standard verbosity (message + caller + code + category + context)
+errific.Configure(VerbosityStandard)
+fmt.Println(err)
+// Output (JSON): {"error":"user not found","code":"USER_404","caller":"main.go:20","context":{"user_id":"user-123"}}
+
+// Custom verbosity (show only specific fields)
+errific.Configure(VerbosityFull, HideContext, HideMCPData)
+fmt.Println(err)
+// Output (JSON): {"error":"user not found","code":"USER_404","caller":"main.go:20","http_status":404}
+```
+
+**Available output formats:**
+- `OutputJSON` (default) - Compact JSON for structured logging
+- `OutputJSONPretty` - Indented JSON for documentation and debugging
+- `OutputPretty` - Multi-line, human-readable text
+- `OutputCompact` - Single-line key=value pairs
+
+**Available verbosity levels:**
+- `VerbosityFull` (default) - Show all non-empty fields
+- `VerbosityStandard` - Show code, category, context
+- `VerbosityMinimal` - Show only message and caller
+- `VerbosityCustom` - Use with `Show*`/`Hide*` flags for granular control
+
+**Granular field control:**
+`HideCode`, `HideCategory`, `HideContext`, `HideHTTPStatus`, `HideRetryMetadata`, `HideMCPData`, `HideTags`, `HideLabels`, `HideTimestamps`
 
 ### JSON Output
 

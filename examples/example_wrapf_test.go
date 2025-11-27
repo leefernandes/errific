@@ -9,7 +9,7 @@ import (
 )
 
 func Example_wrapf() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// wrap a formatted error.
 	var ErrExample Err = "example error"
 	err := ErrExample.Wrapf("formatted %d: %w", 1, io.EOF)
@@ -25,7 +25,7 @@ func Example_wrapf() {
 }
 
 func Example_wrapfNest() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	// wrapped & formatted errific error chain.
 	var (
 		Err1 Err = "error 1"
@@ -49,7 +49,7 @@ func Example_wrapfNest() {
 }
 
 func Example_wrapfChain() {
-	Configure() // default configuration
+	Configure(OutputPretty) // default configuration
 	var ErrExample Err = "example error"
 
 	err := ErrExample.
