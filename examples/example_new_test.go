@@ -21,7 +21,7 @@ func ExampleNew() {
 	// true
 }
 
-func ExampleNewWrapError() {
+func Example_newWrapError() {
 	Configure() // default configuration
 	// wrap an error.
 	var ErrExample Err = "example error"
@@ -31,13 +31,13 @@ func ExampleNewWrapError() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error [errific/examples/example_new_test.go:28.ExampleNewWrapError]
+	// example error [errific/examples/example_new_test.go:28.Example_newWrapError]
 	// EOF
 	// true
 	// true
 }
 
-func ExampleNewWrapErrors() {
+func Example_newWrapErrors() {
 	Configure() // default configuration
 	// wrap multiple errors.
 	var ErrExample Err = "example error"
@@ -48,7 +48,7 @@ func ExampleNewWrapErrors() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error [errific/examples/example_new_test.go:44.ExampleNewWrapErrors]
+	// example error [errific/examples/example_new_test.go:44.Example_newWrapErrors]
 	// unexpected EOF
 	// EOF
 	// true
@@ -56,7 +56,7 @@ func ExampleNewWrapErrors() {
 	// true
 }
 
-func ExampleNewNest() {
+func Example_newNest() {
 	Configure() // default configuration
 	// wrapped errific error chain.
 	var (
@@ -76,10 +76,10 @@ func ExampleNewNest() {
 	fmt.Println(errors.Is(err3, io.EOF))
 
 	// Output:
-	// example error [errific/examples/example_new_test.go:72.ExampleNewNest]
-	// error 3 [errific/examples/example_new_test.go:69.ExampleNewNest]
-	// error 2 [errific/examples/example_new_test.go:68.ExampleNewNest]
-	// error 1 [errific/examples/example_new_test.go:67.ExampleNewNest]
+	// example error [errific/examples/example_new_test.go:72.Example_newNest]
+	// error 3 [errific/examples/example_new_test.go:69.Example_newNest]
+	// error 2 [errific/examples/example_new_test.go:68.Example_newNest]
+	// error 1 [errific/examples/example_new_test.go:67.Example_newNest]
 	// EOF
 	// true
 	// true

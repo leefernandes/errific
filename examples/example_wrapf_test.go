@@ -8,7 +8,7 @@ import (
 	. "github.com/leefernandes/errific"
 )
 
-func ExampleWrapf() {
+func Example_wrapf() {
 	Configure() // default configuration
 	// wrap a formatted error.
 	var ErrExample Err = "example error"
@@ -18,13 +18,13 @@ func ExampleWrapf() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error [errific/examples/example_wrapf_test.go:15.ExampleWrapf]
+	// example error [errific/examples/example_wrapf_test.go:15.Example_wrapf]
 	// formatted 1: EOF
 	// true
 	// true
 }
 
-func ExampleWrapfNest() {
+func Example_wrapfNest() {
 	Configure() // default configuration
 	// wrapped & formatted errific error chain.
 	var (
@@ -40,15 +40,15 @@ func ExampleWrapfNest() {
 	fmt.Println(errors.Is(err2, io.EOF))
 
 	// Output:
-	// error 2 [errific/examples/example_wrapf_test.go:35.ExampleWrapfNest]
-	// format 1: error 1 [errific/examples/example_wrapf_test.go:34.ExampleWrapfNest]
+	// error 2 [errific/examples/example_wrapf_test.go:35.Example_wrapfNest]
+	// format 1: error 1 [errific/examples/example_wrapf_test.go:34.Example_wrapfNest]
 	// format 0: EOF
 	// true
 	// true
 	// true
 }
 
-func ExampleWrapfChain() {
+func Example_wrapfChain() {
 	Configure() // default configuration
 	var ErrExample Err = "example error"
 
@@ -62,7 +62,7 @@ func ExampleWrapfChain() {
 	fmt.Println(errors.Is(err, io.EOF))
 
 	// Output:
-	// example error [errific/examples/example_wrapf_test.go:56.ExampleWrapfChain]
+	// example error [errific/examples/example_wrapf_test.go:56.Example_wrapfChain]
 	// first 1
 	// second 2
 	// third 3

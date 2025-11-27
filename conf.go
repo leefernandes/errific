@@ -3,12 +3,18 @@ package errific
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"sync"
 )
 
 // Configure errific options.
 func Configure(opts ...Option) {
+	cMu.Lock()
+	defer cMu.Unlock()
+
 	// defaults
 	c.caller = Suffix
 	c.layout = Newline
@@ -38,29 +44,35 @@ func Configure(opts ...Option) {
 	if c.trimCWD {
 		cwd, err := os.Getwd()
 		if err != nil {
-			panic(err)
+			// Fallback to not trimming CWD if we can't get it
+			c.trimCWD = false
+			return
 		}
 
-		c.trimPrefixes = append([]string{filepath.Dir(cwd) + "/"}, c.trimPrefixes...)
+		// Trim the current working directory itself, not its parent
+		c.trimPrefixes = append([]string{cwd + "/"}, c.trimPrefixes...)
 	}
 }
 
-var c struct {
-	// Caller will configure the caller: Suffix|Prefix|Disabled.
-	// Default is Suffix.
-	caller callerOption
-	// Layout will configure the layout of wrapped errors: Newline|Inline.
-	// Default is Newline.
-	layout layoutOption
-	// WithStack will append stacktrace to end of message.
-	// Default is not including the stack.
-	withStack withStackTraceOption
-	// TrimPrefixes will trim prefixes from caller frame filenames.
-	trimPrefixes []string
-	// TrimCWD will trim the current working directory from filenames.
-	// Default is false.
-	trimCWD trimCWDOption
-}
+var (
+	c struct {
+		// Caller will configure the caller: Suffix|Prefix|Disabled.
+		// Default is Suffix.
+		caller callerOption
+		// Layout will configure the layout of wrapped errors: Newline|Inline.
+		// Default is Newline.
+		layout layoutOption
+		// WithStack will append stacktrace to end of message.
+		// Default is not including the stack.
+		withStack withStackTraceOption
+		// TrimPrefixes will trim prefixes from caller frame filenames.
+		trimPrefixes []string
+		// TrimCWD will trim the current working directory from filenames.
+		// Default is false.
+		trimCWD trimCWDOption
+	}
+	cMu sync.RWMutex
+)
 
 type callerOption int
 
@@ -128,8 +140,26 @@ type Option interface {
 }
 
 var root string
+var goroot string
 
 func init() {
 	_, file, _, _ := runtime.Caller(0)
 	root = fmt.Sprintf("%s/", filepath.Join(filepath.Dir(file), ".."))
+
+	// Try to get GOROOT using "go env GOROOT" first (preferred method)
+	if cmd := exec.Command("go", "env", "GOROOT"); cmd != nil {
+		if output, err := cmd.Output(); err == nil {
+			trimmed := strings.TrimSpace(string(output))
+			if trimmed != "" {
+				goroot = trimmed
+				return
+			}
+		}
+	}
+
+	// Fallback to runtime.GOROOT() if command failed
+	// Note: runtime.GOROOT() is deprecated but still works as a fallback
+	if fallback := runtime.GOROOT(); fallback != "" {
+		goroot = fallback
+	}
 }
